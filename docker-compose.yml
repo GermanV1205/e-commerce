@@ -1,0 +1,44 @@
+services:
+  # 1. Base de Datos (PostgreSQL)
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: ecommerce-db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_DB: ecommerce_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce-network
+
+  # 2. Tu API (NestJS)
+  api:
+    build:
+      context: ./e-commerce-backend
+      dockerfile: Dockerfile
+    container_name: ecommerce-api
+    restart: always
+    environment:
+      # Conectamos la API al contenedor de la base de datos usando su nombre 'postgres-db'
+      DATABASE_URL: postgresql://admin:adminpassword@postgres-db:5432/ecommerce_db?schema=public
+      JWT_SECRET: super-secreto-para-el-jwt-ecommerce-tienda-ropa
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres-db
+    networks:
+      - ecommerce-network
+
+# Definimos volúmenes persistentes para que no se borren los datos de la BD si el contenedor se apaga
+volumes:
+  postgres_data:
+
+# Definimos la red aislada (Servicios de red local según tu documento)
+networks:
+  ecommerce-network:
+    driver: bridge
