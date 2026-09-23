@@ -98,8 +98,23 @@ export const ProductsPage = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-indigo-600 hover:text-indigo-900 mr-3">Editar</button>
-                      <button className="text-red-600 hover:text-red-900">Eliminar</button>
+                      <Link to={`/admin/products/${product.id}/edit`} className="text-indigo-600 hover:text-indigo-900 mr-3">Editar</Link>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!window.confirm(`¿Eliminar "${product.name}"?`)) return;
+                          try {
+                            await api.delete(`/products/${product.id}`);
+                            setProducts((current) => current.filter((item) => item.id !== product.id));
+                          } catch (err) {
+                            console.error(err);
+                            setError('No se pudo eliminar el producto.');
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        Eliminar
+                      </button>
                     </td>
                   </tr>
                 );

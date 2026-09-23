@@ -1,35 +1,56 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
-  // --- MÉTODOS DE CREACIÓN (Transacción ACID) ---
+  async create(createProductDto: CreateProductDto) {
+    const { variants, ...productData } = createProductDto;
 
-  async create(createProductDto: any) {
-    // 1. Extraemos 'price' para que no viaje al modelo principal Product,
-    // y separamos las variantes del resto de la información del producto.
-    const { price, variants, ...productData } = createProductDto;
-
-    // 2. Ejecutamos la Escritura Anidada (Nested Write) ACID en Prisma
     return this.prisma.product.create({
       data: {
-        ...productData, // Inyecta name, description, categoryId, slug, isActive
+        ...productData,
         variants: {
-          create: variants.map((variant: any) => ({
+          create: variants.map((variant) => ({
             sku: variant.sku,
             size: variant.size,
             color: variant.color,
-            price: variant.price, // El precio se guarda a nivel de variante
+            price: variant.price,
             stock: variant.stock,
           })),
         },
       },
       include: {
-        variants: true, // Retorna el producto con sus variantes creadas
+        variants: true,
+        category: true,
       },
     });
+  }
+
+  async update(id: string, updateProductDto: UpdateProductDto) {
+    await this.ensureExists(id);
+
+    return this.prisma.product.update({
+      where: { id },
+      data: updateProductDto,
+      include: { variants: true, category: true },
+    });
+  }
+
+  async remove(id: string) {
+    await this.ensureExists(id);
+    return this.prisma.product.delete({ where: { id } });
+  }
+
+  private async ensureExists(id: string) {
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    if (!product) {
+      throw new NotFoundException(`El producto con ID ${id} no existe`);
+    }
+    return product;
   }
 
   // --- MÉTODOS PÚBLICOS (Catálogo) ---

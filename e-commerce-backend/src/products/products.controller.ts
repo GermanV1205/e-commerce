@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 
 import { ProductsService } from './products.service';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 import { UpdateProductImageDto } from './dto/update-product-image.dto';
 import { RestockVariantDto } from './dto/restock-variant.dto';
 
@@ -48,10 +50,26 @@ export class ProductsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Post()
-  create(@Body() createProductDto: any) {
-    // Nota Técnica: Usamos 'any' por ahora para conectar rápido con React, 
-    // pero en la fase de refinamiento crearemos el CreateProductDto para validación estricta.
+  create(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar los datos de un producto' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
+    return this.productsService.update(id, updateProductDto);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Eliminar un producto y sus variantes' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.productsService.remove(id);
   }
   
   @ApiBearerAuth() // Indica en Swagger que esta ruta requiere el candado JWT

@@ -1,42 +1,42 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Interceptor de Peticiones: Inyecta el JWT automáticamente
-api.interceptors.request.use(
-  (config) => {
-    // Obtenemos el token guardado en el navegador
-    const token = localStorage.getItem('token');
+let refreshPromise: Promise<unknown> | null = null;
 
-    // Si existe, lo añadimos a la cabecera de Autorización
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Interceptor de Respuestas: el access token dura 15 minutos y todavía no hay
-// refresh token, así que un 401 significa sesión terminada.
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+  async (error) => {
+    const original = error.config as { url?: string; _retry?: boolean };
 
-      if (!window.location.pathname.startsWith('/auth/login')) {
-        window.location.href = '/auth/login';
+    const isAuthRoute = original.url?.includes('/auth/login')
+      || original.url?.includes('/auth/register')
+      || original.url?.includes('/auth/refresh');
+
+    if (error.response?.status === 401 && !original._retry && !isAuthRoute) {
+      original._retry = true;
+
+      try {
+        refreshPromise ??= api.post('/auth/refresh');
+        await refreshPromise;
+        refreshPromise = null;
+        return api(original);
+      } catch (refreshError) {
+        refreshPromise = null;
+        localStorage.removeItem('user');
+        if (!window.location.pathname.startsWith('/auth/')) {
+          window.location.href = '/auth/login';
+        }
+        return Promise.reject(refreshError);
       }
     }
+
     return Promise.reject(error);
-  }
+  },
 );

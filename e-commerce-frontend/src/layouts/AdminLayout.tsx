@@ -1,12 +1,12 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { clearSession, getUser } from '../services/auth';
+import { getUser, logoutRequest } from '../services/auth';
 
 export const AdminLayout = () => {
   const navigate = useNavigate();
   const user = getUser();
 
-  const handleLogout = () => {
-    clearSession();
+  const handleLogout = async () => {
+    await logoutRequest();
     navigate('/auth/login', { replace: true });
   };
 

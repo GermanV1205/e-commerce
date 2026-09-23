@@ -39,6 +39,21 @@ export interface AuthUser {
   firstName: string;
 }
 
+export interface CartItem {
+  id: string;
+  quantity: number;
+  productVariant: ProductVariant & {
+    product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'slug'>;
+  };
+}
+
+export interface Cart {
+  id?: string;
+  items: CartItem[];
+  totalItems: number;
+  totalAmount: number;
+}
+
 export interface DashboardReport {
   metrics: {
     pendingOrders: number;

@@ -1,19 +1,15 @@
+import { api } from './api';
 import type { AuthUser } from '../types';
 
-const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
 
-export const saveSession = (token: string, user: AuthUser) => {
-  localStorage.setItem(TOKEN_KEY, token);
+export const saveSession = (user: AuthUser) => {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 };
 
 export const clearSession = () => {
-  localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
 };
-
-export const getToken = (): string | null => localStorage.getItem(TOKEN_KEY);
 
 export const getUser = (): AuthUser | null => {
   const raw = localStorage.getItem(USER_KEY);
@@ -27,9 +23,16 @@ export const getUser = (): AuthUser | null => {
   }
 };
 
-export const isAuthenticated = (): boolean => getToken() !== null;
+export const isAuthenticated = (): boolean => getUser() !== null;
 
-/** Extrae el mensaje de error que devuelve NestJS, con un texto de respaldo. */
+export const logoutRequest = async () => {
+  try {
+    await api.post('/auth/logout');
+  } finally {
+    clearSession();
+  }
+};
+
 export const apiErrorMessage = (error: unknown, fallback: string): string => {
   if (typeof error === 'object' && error !== null && 'response' in error) {
     const response = (error as { response?: { data?: { message?: string | string[] } } }).response;
@@ -42,7 +45,6 @@ export const apiErrorMessage = (error: unknown, fallback: string): string => {
   return fallback;
 };
 
-/** Código HTTP de una respuesta de error de Axios, si existe. */
 export const apiErrorStatus = (error: unknown): number | undefined => {
   if (typeof error === 'object' && error !== null && 'response' in error) {
     return (error as { response?: { status?: number } }).response?.status;

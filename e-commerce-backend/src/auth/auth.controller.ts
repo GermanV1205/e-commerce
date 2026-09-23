@@ -1,47 +1,77 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Get,
+  UseGuards,
+  Request,
+  Res,
+} from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import type { Response } from 'express';
 
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { JwtAuthGuard } from './guards/jwt-auth.guard'; 
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { REFRESH_COOKIE } from './auth-cookies';
 
-@ApiTags('Autenticación y Clientes') // Categoría en la interfaz de Swagger
+@ApiTags('Autenticación y Clientes')
 @Controller('api/v1/auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @ApiOperation({ summary: 'Registrar un nuevo cliente en la tienda' })
-  @ApiResponse({ status: 201, description: 'Usuario registrado exitosamente.' })
-  @ApiResponse({ status: 400, description: 'El correo ya está en uso o los datos son inválidos.' })
+  @ApiOperation({ summary: 'Registrar un nuevo cliente e iniciar sesión' })
+  @ApiResponse({ status: 201, description: 'Usuario registrado. Cookies httpOnly emitidas.' })
   @Post('register')
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  async register(
+    @Body() registerDto: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.authService.register(registerDto, res);
   }
 
-  @ApiOperation({ summary: 'Iniciar sesión y obtener token JWT (Access Token)' })
-  @ApiResponse({ status: 200, description: 'Login exitoso. Devuelve el token JWT.' })
-  @ApiResponse({ status: 401, description: 'Credenciales inválidas (correo o contraseña incorrectos).' })
+  @ApiOperation({ summary: 'Iniciar sesión. Emite access + refresh en cookies httpOnly' })
+  @ApiResponse({ status: 200, description: 'Login exitoso.' })
+  @ApiResponse({ status: 401, description: 'Credenciales inválidas.' })
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    // Corregido el error de tipeo (asynclogin -> async login)
-    return this.authService.login(loginDto.email, loginDto.password);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.authService.login(loginDto.email, loginDto.password, res);
   }
 
-  // --- RUTAS PROTEGIDAS ---
-  
-  @ApiBearerAuth() // Indica en Swagger que requiere el candado JWT
+  @ApiOperation({ summary: 'Rotar el refresh token y emitir un nuevo access token' })
+  @HttpCode(HttpStatus.OK)
+  @Post('refresh')
+  async refresh(
+    @Request() req: { cookies?: Record<string, string> },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.authService.refresh(req.cookies?.[REFRESH_COOKIE], res);
+  }
+
+  @ApiOperation({ summary: 'Cerrar sesión y revocar el refresh token' })
+  @HttpCode(HttpStatus.OK)
+  @Post('logout')
+  async logout(
+    @Request() req: { cookies?: Record<string, string> },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.authService.logout(req.cookies?.[REFRESH_COOKIE], res);
+  }
+
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Obtener el perfil del usuario autenticado' })
-  @ApiResponse({ status: 200, description: 'Perfil recuperado exitosamente gracias al token JWT.' })
-  @ApiResponse({ status: 401, description: 'No autorizado. Token inválido o ausente.' })
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  getProfile(@Request() req: any) {
-    // Si el JWT es válido, Passport inyecta los datos del usuario en req.user
-    return {
-      message: 'Acceso autorizado a ruta protegida',
-      user: req.user,
-    };
+  getProfile(@Request() req: { user: { userId: string; email: string; role: string } }) {
+    return { user: req.user };
   }
 }

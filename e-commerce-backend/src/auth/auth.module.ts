@@ -24,7 +24,7 @@ import { JwtStrategy } from './strategies/jwt.strategy'; // <-- Importar aquí
           signOptions: {
             // `expiresIn` espera el tipo plantilla StringValue de la librería ms
             expiresIn: (configService.get<string>('JWT_EXPIRES_IN') ??
-              '8h') as SignOptions['expiresIn'],
+              '15m') as SignOptions['expiresIn'],
           },
         };
       },

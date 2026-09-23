@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api'; // Asegúrate de que este archivo exista
 import { apiErrorMessage, saveSession } from '../../services/auth';
 
@@ -21,8 +21,8 @@ export const LoginPage = () => {
       const response = await api.post('/auth/login', { email, password });
 
       // 2. Extraemos el JWT y guardamos la sesión
-      const { access_token, user } = response.data;
-      saveSession(access_token, user);
+      const { user } = response.data;
+      saveSession(user);
 
       // 3. Los clientes van a la tienda; el personal, al backoffice
       navigate(user.role === 'CLIENT' ? '/' : '/admin/dashboard', { replace: true });
@@ -86,6 +86,9 @@ export const LoginPage = () => {
         >
           {loading ? 'Verificando credenciales...' : 'Ingresar al Sistema'}
         </button>
+        <p className="mt-4 text-center text-sm text-gray-500">
+          ¿No tienes cuenta? <Link to="/auth/register" className="underline">Regístrate</Link>
+        </p>
       </div>
     </form>
   );

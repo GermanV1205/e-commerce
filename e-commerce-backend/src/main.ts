@@ -1,15 +1,23 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import { NestExpressApplication } from '@nestjs/platform-express'; 
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'; 
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // --- 1. CONFIGURACIÓN CORS (Permitir conexión con React/Vite) ---
-  // Acepta una lista separada por comas para poder añadir el dominio de producción.
+  app.use(
+    helmet({
+      contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
+  app.use(cookieParser());
+
   const corsOrigin = (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
     .split(',')
     .map((origin) => origin.trim());
@@ -20,7 +28,6 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // --- 2. VALIDACIONES DE SEGURIDAD (DTOs) ---
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -29,21 +36,20 @@ async function bootstrap() {
     }),
   );
 
-  // --- 3. ARCHIVOS ESTÁTICOS (Imágenes/Uploads) ---
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',
   });
 
-  // --- 4. CONFIGURACIÓN DE SWAGGER (OPENAPI) ---
   const config = new DocumentBuilder()
     .setTitle('E-commerce API - Core Backend')
-    .setDescription('Documentación interactiva y trazable del sistema de e-commerce. Soporta operaciones ACID y RBAC.')
+    .setDescription(
+      'Documentación interactiva y trazable del sistema de e-commerce. Soporta operaciones ACID y RBAC.',
+    )
     .setVersion('1.0')
-    .addBearerAuth() // Habilita el botón "Authorize" para inyectar el JWT
+    .addBearerAuth()
     .build();
-    
+
   const document = SwaggerModule.createDocument(app, config);
-  // La documentación vivirá en la ruta /api/docs
   SwaggerModule.setup('api/docs', app, document);
 
   await app.listen(process.env.PORT ?? 3000);

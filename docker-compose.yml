@@ -47,7 +47,8 @@ services:
       # Dentro de la red de Docker se usa el nombre del servicio y el puerto interno 5432
       DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-admin_password_seguro}@postgres:5432/${POSTGRES_DB:-ecommerce}?schema=public
       JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET en el archivo .env de la raiz}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_DAYS: ${JWT_REFRESH_EXPIRES_DAYS:-7}
       PORT: 3000
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
@@ -68,7 +69,7 @@ services:
       context: ./e-commerce-frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api/v1}
+        VITE_API_URL: ${VITE_API_URL:-/api/v1}
     container_name: ecommerce_web
     restart: unless-stopped
     ports:

@@ -42,6 +42,22 @@ async function main() {
   });
   console.log(`Usuario ADMIN listo: ${ADMIN_EMAIL}`);
 
+  const clientEmail = process.env.SEED_CLIENT_EMAIL ?? 'cliente@tienda.com';
+  const clientPassword = process.env.SEED_CLIENT_PASSWORD ?? 'Cliente123!';
+  const clientHash = await bcrypt.hash(clientPassword, 10);
+  await prisma.user.upsert({
+    where: { email: clientEmail },
+    update: {},
+    create: {
+      email: clientEmail,
+      passwordHash: clientHash,
+      firstName: 'Cliente',
+      lastName: 'Demo',
+      role: Role.CLIENT,
+    },
+  });
+  console.log(`Usuario CLIENT listo: ${clientEmail}`);
+
   // Producto de ejemplo para que el catálogo no arranque vacío en un entorno nuevo.
   const chaquetas = await prisma.category.findUniqueOrThrow({
     where: { slug: 'chaquetas' },

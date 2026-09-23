@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { api } from '../../services/api'; // Importamos tu cliente de Axios
+import { useNavigate, useParams } from 'react-router-dom';
+import { api } from '../../services/api';
 import { apiErrorMessage, apiErrorStatus } from '../../services/auth';
-import type { Category } from '../../types';
+import type { Category, Product } from '../../types';
 
 // Interfaz que hace match exacto con el modelo de Prisma
 interface VariantInput {
@@ -16,6 +16,8 @@ interface VariantInput {
 
 export const ProductFormPage = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const isEdit = Boolean(id);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
@@ -46,6 +48,26 @@ export const ProductFormPage = () => {
 
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    if (!id) return;
+
+    const loadProduct = async () => {
+      try {
+        const { data } = await api.get<Product>(`/products/${id}`);
+        setProduct({
+          name: data.name,
+          description: data.description,
+          categoryId: data.categoryId,
+          slug: data.slug,
+        });
+      } catch (err) {
+        setFormError(apiErrorMessage(err, 'No pudimos cargar el producto.'));
+      }
+    };
+
+    loadProduct();
+  }, [id]);
 
   // Estado dinámico de las variantes
   const [variants, setVariants] = useState<VariantInput[]>([
@@ -80,25 +102,31 @@ export const ProductFormPage = () => {
     setLoading(true);
 
     try {
-      // 1. Estructuramos el DTO exactamente como lo espera NestJS
-      const payload = {
-        name: product.name,
-        description: product.description,
-        categoryId: product.categoryId,
-        slug: product.slug || product.name.toLowerCase().trim().replace(/\s+/g, '-'),
-        isActive: true,
-        // Quitamos el ID temporal que solo usa React para las keys de la lista
-        variants: variants.map((variant) => ({
-          sku: variant.sku,
-          size: variant.size,
-          color: variant.color,
-          price: variant.price,
-          stock: variant.stock,
-        })),
-      };
+      const slug = product.slug || product.name.toLowerCase().trim().replace(/\s+/g, '-');
 
-      // 2. Disparamos la petición POST
-      await api.post('/products', payload);
+      if (isEdit && id) {
+        await api.patch(`/products/${id}`, {
+          name: product.name,
+          description: product.description,
+          categoryId: product.categoryId,
+          slug,
+        });
+      } else {
+        await api.post('/products', {
+          name: product.name,
+          description: product.description,
+          categoryId: product.categoryId,
+          slug,
+          isActive: true,
+          variants: variants.map((variant) => ({
+            sku: variant.sku,
+            size: variant.size,
+            color: variant.color,
+            price: variant.price,
+            stock: variant.stock,
+          })),
+        });
+      }
 
       navigate('/admin/products');
 
@@ -119,7 +147,7 @@ export const ProductFormPage = () => {
     <div className="max-w-5xl mx-auto">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Registrar Nueva Prenda</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{isEdit ? 'Editar Prenda' : 'Registrar Nueva Prenda'}</h1>
           <p className="mt-1 text-sm text-gray-500">Añade los detalles, precio base y sus respectivas variantes (SKU).</p>
         </div>
         <button onClick={() => navigate('/admin/products')} className="text-gray-600 hover:text-gray-900 font-medium text-sm">
@@ -185,8 +213,7 @@ export const ProductFormPage = () => {
           </div>
         </div>
 
-        {/* Sección: Variantes (SKU, Tallas, Colores y Stock) */}
-        <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6 overflow-x-auto">
+        {!isEdit && <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6 overflow-x-auto">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium text-gray-900">Variantes de Inventario</h2>
             <button type="button" onClick={handleAddVariant} className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
@@ -225,7 +252,7 @@ export const ProductFormPage = () => {
               </div>
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* Botones de Acción */}
         <div className="flex justify-end space-x-3">
@@ -233,7 +260,7 @@ export const ProductFormPage = () => {
             Cancelar
           </button>
           <button type="submit" disabled={loading} className="bg-black py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50">
-            {loading ? 'Guardando...' : 'Guardar Producto'}
+            {loading ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Guardar Producto'}
           </button>
         </div>
       </form>

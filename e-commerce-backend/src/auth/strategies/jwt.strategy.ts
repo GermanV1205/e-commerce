@@ -2,28 +2,29 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { Request } from 'express';
+import { ACCESS_COOKIE } from '../auth-cookies';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-    constructor(configService: ConfigService) {
-        const secret = configService.get<string>('JWT_SECRET');
+  constructor(configService: ConfigService) {
+    const secret = configService.get<string>('JWT_SECRET');
 
-        // Sin secreto no se arranca: un valor por defecto permitiría firmar tokens
-        // de ADMIN a cualquiera que conozca el código fuente.
-        if (!secret) {
-          throw new Error('JWT_SECRET no está definido. Revisa tu archivo .env');
-        }
+    if (!secret) {
+      throw new Error('JWT_SECRET no está definido. Revisa tu archivo .env');
+    }
 
-        super({
-          jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-          ignoreExpiration: false,
-          secretOrKey: secret,
-        });
-      }
+    super({
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req: Request) => req?.cookies?.[ACCESS_COOKIE] ?? null,
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ]),
+      ignoreExpiration: false,
+      secretOrKey: secret,
+    });
+  }
 
-  // Si el token es válido, Passport ejecuta este método automáticamente
-  async validate(payload: any) {
-    // Retornamos los datos que queremos inyectar en el objeto 'request' de la petición
+  async validate(payload: { sub: string; email: string; role: string }) {
     return { userId: payload.sub, email: payload.email, role: payload.role };
   }
 }

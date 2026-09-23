@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { Product } from '../types';
 import { productFromPrice, productTotalStock } from '../types';
 
@@ -27,7 +28,9 @@ export const ProductCard = ({ product }: ProductCardProps) => {
 
       {/* Información de la prenda */}
       <div className="p-4 flex flex-col flex-1">
-        <h3 className="text-sm font-medium text-gray-900 line-clamp-1">{product.name}</h3>
+        <h3 className="text-sm font-medium text-gray-900 line-clamp-1">
+          <Link to={`/products/${product.id}`}>{product.name}</Link>
+        </h3>
         <p className="text-sm text-gray-500 mt-1">{product.category?.name ?? 'Sin categoría'}</p>
 
         {/* Fila de precio y botón */}
@@ -38,12 +41,14 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             )}
             ${price.toFixed(2)}
           </p>
-          <button
-            disabled={stock === 0}
-            className="bg-black text-white text-xs font-semibold px-3 py-1.5 rounded hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+          <Link
+            to={`/products/${product.id}`}
+            className={`bg-black text-white text-xs font-semibold px-3 py-1.5 rounded hover:bg-gray-800 transition-colors ${
+              stock === 0 ? 'pointer-events-none bg-gray-300' : ''
+            }`}
           >
             {stock === 0 ? 'Agotado' : 'Ver Tallas'}
-          </button>
+          </Link>
         </div>
       </div>
     </div>
