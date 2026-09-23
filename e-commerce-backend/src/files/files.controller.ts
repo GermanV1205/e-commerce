@@ -1,4 +1,5 @@
 import { Controller, Post, UseInterceptors, UploadedFile, BadRequestException, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
@@ -15,7 +16,8 @@ import { Role } from '../auth/enums/role.enum';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('api/v1/files')
 export class FilesController {
-  
+  constructor(private readonly configService: ConfigService) {}
+
   @ApiOperation({ summary: 'Subir una imagen para el catálogo de productos (Max 5MB)' })
   @ApiConsumes('multipart/form-data') // Habilita el botón de "Seleccionar Archivo" en Swagger
   @ApiBody({
@@ -51,7 +53,9 @@ export class FilesController {
     }
 
     // Retornamos la ruta donde el frontend podrá consumir la imagen
-    const fileUrl = `http://localhost:3000/uploads/${file.filename}`;
+    const publicUrl =
+      this.configService.get<string>('PUBLIC_URL') ?? 'http://localhost:3000';
+    const fileUrl = `${publicUrl}/uploads/${file.filename}`;
     
     return {
       message: 'Imagen subida exitosamente',

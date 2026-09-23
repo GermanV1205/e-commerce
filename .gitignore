@@ -1,0 +1,5 @@
+# Variables de entorno de docker-compose (usa .env.example como plantilla)
+.env
+.env.local
+
+node_modules

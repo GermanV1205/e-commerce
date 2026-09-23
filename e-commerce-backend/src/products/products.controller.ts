@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 
 import { ProductsService } from './products.service';
@@ -39,6 +39,20 @@ export class ProductsController {
   // ====================================================================
   // RUTAS DE ADMINISTRACIÓN (Protegidas por RBAC)
   // ====================================================================
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Crear un nuevo producto junto con sus variantes (Transacción ACID)' })
+  @ApiResponse({ status: 201, description: 'Producto y variantes registrados exitosamente.' })
+  @ApiResponse({ status: 401, description: 'No autorizado. Token inválido o ausente.' })
+  @ApiResponse({ status: 403, description: 'Prohibido. Requiere rol ADMIN.' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post()
+  create(@Body() createProductDto: any) {
+    // Nota Técnica: Usamos 'any' por ahora para conectar rápido con React, 
+    // pero en la fase de refinamiento crearemos el CreateProductDto para validación estricta.
+    return this.productsService.create(createProductDto);
+  }
   
   @ApiBearerAuth() // Indica en Swagger que esta ruta requiere el candado JWT
   @ApiOperation({ summary: 'Actualizar la imagen estática de un producto' })

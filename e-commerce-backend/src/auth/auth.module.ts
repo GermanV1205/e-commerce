@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, type JwtModuleOptions } from '@nestjs/jwt';
+import type { SignOptions } from 'jsonwebtoken';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
@@ -13,10 +14,20 @@ import { JwtStrategy } from './strategies/jwt.strategy'; // <-- Importar aquí
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '15m' },
-      }),
+      useFactory: (configService: ConfigService): JwtModuleOptions => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error('JWT_SECRET no está definido. Revisa tu archivo .env');
+        }
+        return {
+          secret,
+          signOptions: {
+            // `expiresIn` espera el tipo plantilla StringValue de la librería ms
+            expiresIn: (configService.get<string>('JWT_EXPIRES_IN') ??
+              '8h') as SignOptions['expiresIn'],
+          },
+        };
+      },
     }),
   ],
   controllers: [AuthController],

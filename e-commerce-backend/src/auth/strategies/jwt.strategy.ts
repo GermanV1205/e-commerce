@@ -5,12 +5,19 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-    constructor(private configService: ConfigService) {
+    constructor(configService: ConfigService) {
+        const secret = configService.get<string>('JWT_SECRET');
+
+        // Sin secreto no se arranca: un valor por defecto permitiría firmar tokens
+        // de ADMIN a cualquiera que conozca el código fuente.
+        if (!secret) {
+          throw new Error('JWT_SECRET no está definido. Revisa tu archivo .env');
+        }
+
         super({
           jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
           ignoreExpiration: false,
-          // Se añade un fallback temporal para satisfacer la exigencia de tipo de TypeScript
-          secretOrKey: configService.get<string>('JWT_SECRET') || 'super_secreto_ecommerce_2026_seguro', 
+          secretOrKey: secret,
         });
       }
 

@@ -5,12 +5,40 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
+  // --- MÉTODOS DE CREACIÓN (Transacción ACID) ---
+
+  async create(createProductDto: any) {
+    // 1. Extraemos 'price' para que no viaje al modelo principal Product,
+    // y separamos las variantes del resto de la información del producto.
+    const { price, variants, ...productData } = createProductDto;
+
+    // 2. Ejecutamos la Escritura Anidada (Nested Write) ACID en Prisma
+    return this.prisma.product.create({
+      data: {
+        ...productData, // Inyecta name, description, categoryId, slug, isActive
+        variants: {
+          create: variants.map((variant: any) => ({
+            sku: variant.sku,
+            size: variant.size,
+            color: variant.color,
+            price: variant.price, // El precio se guarda a nivel de variante
+            stock: variant.stock,
+          })),
+        },
+      },
+      include: {
+        variants: true, // Retorna el producto con sus variantes creadas
+      },
+    });
+  }
+
   // --- MÉTODOS PÚBLICOS (Catálogo) ---
   
   async findAll() {
     return this.prisma.product.findMany({
       include: {
         variants: true, // Incluimos las variantes para mostrar precios y tallas
+        category: true, // El catálogo muestra el nombre de la categoría
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -19,7 +47,7 @@ export class ProductsService {
   async findOne(id: string) {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: { variants: true },
+      include: { variants: true, category: true },
     });
 
     if (!product) {
@@ -44,6 +72,7 @@ export class ProductsService {
       data: { imageUrl },
     });
   }
+
   // --- MÓDULO DE INVENTARIO Y COMPRAS ---
 
   async restockVariant(variantId: string, quantity: number) {
