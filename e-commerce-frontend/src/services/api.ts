@@ -10,6 +10,13 @@ export const api = axios.create({
 
 let refreshPromise: Promise<unknown> | null = null;
 
+api.interceptors.request.use((config) => {
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {

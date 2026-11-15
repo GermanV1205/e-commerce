@@ -54,4 +54,22 @@ describe('CartService', () => {
     expect(result.totalItems).toBe(2);
     expect(result.totalAmount).toBe(40);
   });
+
+  it('fusiona líneas de un carrito de invitado', async () => {
+    prisma.productVariant.findUnique.mockResolvedValue({ id: 'v1', stock: 10, price: 20 });
+    prisma.cart.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: 'c1',
+        items: [{ quantity: 1, productVariant: { price: 20 } }],
+      });
+    prisma.cart.create.mockResolvedValue({ id: 'c1', userId: 'user-1' });
+    prisma.cartItem.findFirst.mockResolvedValue(null);
+
+    await service.mergeGuestItems('user-1', [
+      { productVariantId: 'v1', quantity: 1 },
+    ]);
+
+    expect(prisma.cartItem.create).toHaveBeenCalled();
+  });
 });

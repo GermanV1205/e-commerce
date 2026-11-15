@@ -47,6 +47,14 @@ export class CartService {
     return this.getCart(userId);
   }
 
+  async mergeGuestItems(userId: string, items: { productVariantId: string; quantity: number }[]) {
+    let cart = await this.getCart(userId);
+    for (const item of items) {
+      cart = await this.addItemToCart(userId, item);
+    }
+    return cart;
+  }
+
   async updateItemQuantity(userId: string, itemId: string, quantity: number) {
     const item = await this.findOwnedItem(userId, itemId);
 

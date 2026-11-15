@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { apiErrorMessage, getUser } from '../services/auth';
+import { notifyCartUpdated } from '../context/CartCountContext';
+import { addGuestItem } from '../services/guest-cart';
 import type { Product, ProductVariant } from '../types';
 import { variantPrice } from '../types';
 
 export const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [selected, setSelected] = useState<ProductVariant | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -33,16 +34,21 @@ export const ProductDetailPage = () => {
   }, [id]);
 
   const handleAddToCart = async () => {
-    if (!selected) return;
-    if (!getUser()) {
-      navigate('/auth/login', { replace: true, state: { from: `/products/${id}` } });
-      return;
-    }
-
+    if (!selected || !product) return;
     setAdding(true);
     setError(null);
     try {
-      await api.post('/cart', { productVariantId: selected.id, quantity });
+      if (!getUser()) {
+        addGuestItem(selected, {
+          id: product.id,
+          name: product.name,
+          imageUrl: product.imageUrl,
+          slug: product.slug,
+        }, quantity);
+      } else {
+        await api.post('/cart', { productVariantId: selected.id, quantity });
+      }
+      notifyCartUpdated();
       setNotice('Producto agregado al carrito.');
     } catch (err) {
       setError(apiErrorMessage(err, 'No se pudo agregar al carrito.'));

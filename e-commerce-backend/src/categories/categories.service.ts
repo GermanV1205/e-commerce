@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -8,7 +12,6 @@ export class CategoriesService {
   constructor(private prisma: PrismaService) {}
 
   async create(createCategoryDto: CreateCategoryDto) {
-    // Validar si el slug ya existe para evitar errores 500 de base de datos
     const existingCategory = await this.prisma.category.findUnique({
       where: { slug: createCategoryDto.slug },
     });
@@ -22,22 +25,46 @@ export class CategoriesService {
     });
   }
 
-  async findAll() {
+  findAll() {
     return this.prisma.category.findMany({
-      orderBy: { name: 'asc' } // Ordenamos alfabéticamente para el frontend
+      orderBy: { name: 'asc' },
     });
   }
 
-  // Dejaremos el resto de métodos (findOne, update, remove) generados por el CLI listos para ser implementados luego
-  findOne(id: string) {
-    return this.prisma.category.findUnique({ where: { id } });
+  async findOne(id: string) {
+    const category = await this.prisma.category.findUnique({ where: { id } });
+    if (!category) {
+      throw new NotFoundException('La categoría no existe');
+    }
+    return category;
   }
 
-  update(id: string, updateCategoryDto: UpdateCategoryDto) {
-    return `This action updates a #${id} category`;
+  async update(id: string, updateCategoryDto: UpdateCategoryDto) {
+    await this.findOne(id);
+
+    if (updateCategoryDto.slug) {
+      const clash = await this.prisma.category.findFirst({
+        where: { slug: updateCategoryDto.slug, NOT: { id } },
+      });
+      if (clash) {
+        throw new ConflictException('Ya existe una categoría con este slug');
+      }
+    }
+
+    return this.prisma.category.update({
+      where: { id },
+      data: updateCategoryDto,
+    });
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} category`;
+  async remove(id: string) {
+    await this.findOne(id);
+    const products = await this.prisma.product.count({ where: { categoryId: id } });
+    if (products > 0) {
+      throw new ConflictException(
+        'No se puede eliminar: hay productos en esta categoría. Muévelos o elimínalos primero.',
+      );
+    }
+    return this.prisma.category.delete({ where: { id } });
   }
 }

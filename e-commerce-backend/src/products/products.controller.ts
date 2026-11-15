@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 
 import { ProductsService } from './products.service';
@@ -25,8 +25,8 @@ export class ProductsController {
   @ApiOperation({ summary: 'Obtener todo el catálogo de productos con sus variantes' })
   @ApiResponse({ status: 200, description: 'Catálogo recuperado exitosamente.' })
   @Get()
-  findAll() {
-    return this.productsService.findAll();
+  findAll(@Query('categoryId') categoryId?: string) {
+    return this.productsService.findAll(categoryId || undefined);
   }
 
   @ApiOperation({ summary: 'Obtener el detalle de un producto específico por ID' })
@@ -98,9 +98,10 @@ export class ProductsController {
   @Roles(Role.ADMIN, Role.SELLER)
   @Patch('variants/:variantId/restock')
   restockVariant(
+    @Request() req: { user: { userId: string } },
     @Param('variantId') variantId: string,
-    @Body() restockDto: RestockVariantDto
+    @Body() restockDto: RestockVariantDto,
   ) {
-    return this.productsService.restockVariant(variantId, restockDto.quantity);
+    return this.productsService.restockVariant(variantId, restockDto.quantity, req.user.userId);
   }
 }

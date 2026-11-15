@@ -8,11 +8,17 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 
 async function bootstrap() {
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret || jwtSecret.length < 16) {
+    throw new Error('JWT_SECRET debe estar definido y tener al menos 16 caracteres');
+  }
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const isProd = process.env.NODE_ENV === 'production';
 
   app.use(
     helmet({
-      contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+      contentSecurityPolicy: isProd ? undefined : false,
       crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
@@ -50,7 +56,9 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  if (!isProd || process.env.SWAGGER_ENABLED === 'true') {
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   await app.listen(process.env.PORT ?? 3000);
 }

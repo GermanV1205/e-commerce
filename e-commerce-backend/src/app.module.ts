@@ -4,12 +4,15 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
+import { AddressesModule } from './addresses/addresses.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { ProductVariantsModule } from './product-variants/product-variants.module';
 import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
 import { FilesModule } from './files/files.module';
+import { MailModule } from './mail/mail.module';
+import { HealthModule } from './health/health.module';
 import { ReportsModule } from './reports/reports.module';
 
 @Module({
@@ -20,12 +23,15 @@ import { ReportsModule } from './reports/reports.module';
     }),
     PrismaModule,
     AuthModule,
+    AddressesModule,
     CategoriesModule,
     ProductsModule,
     ProductVariantsModule,
     CartModule,
     OrdersModule,
     FilesModule,
+    MailModule,
+    HealthModule,
     ReportsModule,
   ],
   providers: [

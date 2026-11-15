@@ -23,6 +23,7 @@ type PublicUser = {
   email: string;
   role: string;
   firstName: string;
+  lastName: string;
 };
 
 @Injectable()
@@ -105,8 +106,28 @@ export class AuthService {
     return { message: 'Sesión cerrada' };
   }
 
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, role: true, firstName: true, lastName: true },
+    });
+    if (!user) {
+      throw new UnauthorizedException('No hay sesión activa');
+    }
+    return { user };
+  }
+
+  async updateProfile(userId: string, data: { firstName: string; lastName: string }) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { firstName: data.firstName.trim(), lastName: data.lastName.trim() },
+      select: { id: true, email: true, role: true, firstName: true, lastName: true },
+    });
+    return { user };
+  }
+
   private async issueSession(
-    user: { id: string; email: string; role: string; firstName: string },
+    user: { id: string; email: string; role: string; firstName: string; lastName: string },
     res: Response,
   ) {
     const payload = { sub: user.id, email: user.email, role: user.role };
@@ -131,6 +152,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       firstName: user.firstName,
+      lastName: user.lastName,
     };
 
     return { user: publicUser };

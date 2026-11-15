@@ -18,6 +18,7 @@ const user = {
   email: 'admin@tienda.com',
   role: 'ADMIN',
   firstName: 'Ada',
+  lastName: 'Lovelace',
   passwordHash: 'hashed',
 };
 
@@ -27,6 +28,7 @@ describe('AuthService', () => {
     user: {
       findUnique: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
     refreshToken: {
       create: jest.fn(),

@@ -32,6 +32,15 @@ enum MovementType {
   RETURN
 }
 
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  APPROVED_PARTIAL
+  PARTIAL_EXPIRED
+  FAILED
+}
+
 // ==========================================
 // MODELS
 // ==========================================
@@ -165,8 +174,27 @@ model Order {
   shippingAddress Address     @relation(fields: [shippingAddressId], references: [id])
   items           OrderItem[]
   notes           OrderNote[]
+  payment         Payment?
 
   @@map("orders")
+}
+
+model Payment {
+  id                String        @id @default(uuid()) @db.Uuid
+  orderId           String        @unique @map("order_id") @db.Uuid
+  reference         String        @unique @db.VarChar(32)
+  status            PaymentStatus @default(PENDING)
+  amount            Decimal       @db.Decimal(10, 2)
+  currency          String        @db.VarChar(3)
+  paymentMethodName String?       @map("payment_method_name") @db.VarChar(50)
+  statusMessage     String?       @map("status_message") @db.VarChar(255)
+  receiptUrl        String?       @map("receipt_url") @db.Text
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
 }
 
 model OrderItem {

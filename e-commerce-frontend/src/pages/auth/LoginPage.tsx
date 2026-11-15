@@ -1,10 +1,14 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api'; // Asegúrate de que este archivo exista
 import { apiErrorMessage, saveSession } from '../../services/auth';
+import { notifyCartUpdated } from '../../context/CartCountContext';
+import { mergeGuestCart } from '../../services/guest-cart';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from;
   // Estados para capturar lo que el usuario escribe
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,9 +27,11 @@ export const LoginPage = () => {
       // 2. Extraemos el JWT y guardamos la sesión
       const { user } = response.data;
       saveSession(user);
+      await mergeGuestCart().catch(() => undefined);
+      notifyCartUpdated();
 
       // 3. Los clientes van a la tienda; el personal, al backoffice
-      navigate(user.role === 'CLIENT' ? '/' : '/admin/dashboard', { replace: true });
+      navigate(from || (user.role === 'CLIENT' ? '/' : '/admin/dashboard'), { replace: true });
 
     } catch (err) {
       // Si NestJS rechaza (Ej. 401 Credenciales inválidas), lo mostramos aquí

@@ -10,7 +10,7 @@ export class ReportsService {
     const [pendingOrdersCount, deliveredOrdersCount, lowStockVariants] = await Promise.all([
       // 1. Órdenes que tu mamá necesita despachar
       this.prisma.order.count({
-        where: { status: 'PENDING' },
+        where: { status: 'PAID' },
       }),
 
       // 2. Órdenes completadas con éxito

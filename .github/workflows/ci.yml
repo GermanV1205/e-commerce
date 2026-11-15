@@ -58,6 +58,71 @@ jobs:
       - name: Tests
         run: npm test
 
+  e2e:
+    name: Playwright (flujos críticos)
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: admin_password_seguro
+          POSTGRES_DB: ecommerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://admin:admin_password_seguro@localhost:5432/ecommerce_test?schema=public
+      JWT_SECRET: secreto-solo-para-la-pipeline-de-ci
+      CORS_ORIGIN: http://127.0.0.1:4173
+      FRONTEND_URL: http://127.0.0.1:4173
+      STORAGE_DRIVER: local
+      VITE_API_URL: http://localhost:3000/api/v1
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            e-commerce-backend/package-lock.json
+            e-commerce-frontend/package-lock.json
+
+      - name: Backend listo
+        working-directory: e-commerce-backend
+        run: |
+          npm ci
+          npm run db:generate
+          npm run db:deploy
+          npm run db:seed
+          npm run build
+
+      - name: Frontend + API + Playwright
+        run: |
+          cd e-commerce-backend
+          npm run start:prod &
+          for i in $(seq 1 40); do
+            curl -sf http://localhost:3000/api/v1/health && break
+            sleep 2
+            if [ "$i" -eq 40 ]; then echo "La API no respondió a tiempo"; exit 1; fi
+          done
+          cd ../e-commerce-frontend
+          npm ci
+          npx playwright install --with-deps chromium
+          npm run build
+          npm run test:e2e
+
+
   frontend:
     name: Frontend (React + Vite)
     runs-on: ubuntu-latest

@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@ne
 import { CartService } from './cart.service';
 import { CreateCartDto } from './dto/create-cart.dto';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
+import { MergeCartDto } from './dto/merge-cart.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('Carrito y Checkout')
@@ -17,6 +18,12 @@ export class CartController {
   @Post()
   addItem(@Request() req: { user: { userId: string } }, @Body() createCartDto: CreateCartDto) {
     return this.cartService.addItemToCart(req.user.userId, createCartDto);
+  }
+
+  @ApiOperation({ summary: 'Fusionar el carrito de invitado al iniciar sesión' })
+  @Post('merge')
+  merge(@Request() req: { user: { userId: string } }, @Body() dto: MergeCartDto) {
+    return this.cartService.mergeGuestItems(req.user.userId, dto.items);
   }
 
   @ApiOperation({ summary: 'Obtener el carrito actual del cliente autenticado' })

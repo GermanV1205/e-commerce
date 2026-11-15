@@ -37,6 +37,16 @@ export interface AuthUser {
   email: string;
   role: 'ADMIN' | 'SELLER' | 'CLIENT';
   firstName: string;
+  lastName?: string;
+}
+
+export interface SavedAddress {
+  id: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  isDefault: boolean;
 }
 
 export interface CartItem {
@@ -53,6 +63,89 @@ export interface Cart {
   totalItems: number;
   totalAmount: number;
 }
+
+export type OrderStatus =
+  | 'PENDING'
+  | 'PAID'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'REFUNDED'
+  | 'RETURNED';
+
+export type PaymentStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'APPROVED_PARTIAL'
+  | 'PARTIAL_EXPIRED'
+  | 'FAILED';
+
+export interface Payment {
+  id: string;
+  reference: string;
+  status: PaymentStatus;
+  amount: number | string;
+  currency: string;
+  paymentMethodName: string | null;
+  receiptUrl: string | null;
+  statusMessage: string | null;
+}
+
+export interface TransferInfo {
+  method: 'TRANSFER';
+  bankName: string;
+  accountType: string;
+  accountNumber: string;
+  holder: string;
+  identification: string;
+  currency: string;
+}
+
+export interface OrderAddress {
+  id: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+export interface OrderItem {
+  id: string;
+  quantity: number;
+  unitPrice: number | string;
+  subtotal: number | string;
+  productVariant: ProductVariant & {
+    product: Pick<Product, 'id' | 'name' | 'imageUrl' | 'slug'>;
+  };
+}
+
+export interface Order {
+  id: string;
+  status: OrderStatus;
+  totalAmount: number | string;
+  createdAt: string;
+  trackingNumber: string | null;
+  shippingAddress: OrderAddress;
+  items: OrderItem[];
+  payment?: Payment | null;
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  PENDING: 'Pendiente',
+  PAID: 'Pagada',
+  SHIPPED: 'Enviada',
+  DELIVERED: 'Entregada',
+  CANCELLED: 'Cancelada',
+  REFUNDED: 'Reembolsada',
+  RETURNED: 'Devuelta',
+};
 
 export interface DashboardReport {
   metrics: {

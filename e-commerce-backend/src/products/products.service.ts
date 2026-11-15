@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { MovementType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -54,14 +55,15 @@ export class ProductsService {
   }
 
   // --- MÉTODOS PÚBLICOS (Catálogo) ---
-  
-  async findAll() {
+
+  async findAll(categoryId?: string) {
     return this.prisma.product.findMany({
+      where: categoryId ? { categoryId } : undefined,
       include: {
-        variants: true, // Incluimos las variantes para mostrar precios y tallas
-        category: true, // El catálogo muestra el nombre de la categoría
+        variants: true,
+        category: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -96,8 +98,7 @@ export class ProductsService {
 
   // --- MÓDULO DE INVENTARIO Y COMPRAS ---
 
-  async restockVariant(variantId: string, quantity: number) {
-    // 1. Verificamos que la variante específica exista
+  async restockVariant(variantId: string, quantity: number, userId: string) {
     const variant = await this.prisma.productVariant.findUnique({
       where: { id: variantId },
     });
@@ -106,16 +107,24 @@ export class ProductsService {
       throw new NotFoundException(`La variante con ID ${variantId} no fue encontrada en el sistema`);
     }
 
-    // 2. Usamos increment para evitar condiciones de carrera (race conditions)
-    // si dos vendedores registran inventario exactamente al mismo tiempo.
-    return this.prisma.productVariant.update({
-      where: { id: variantId },
-      data: {
-        stock: { increment: quantity },
-      },
-      include: {
-        product: { select: { name: true } } // Devolvemos el nombre del producto para confirmación visual
-      }
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.productVariant.update({
+        where: { id: variantId },
+        data: { stock: { increment: quantity } },
+        include: { product: { select: { name: true } } },
+      });
+
+      await tx.stockMovement.create({
+        data: {
+          productVariantId: variantId,
+          userId,
+          quantity,
+          type: MovementType.PURCHASE,
+          reason: 'Reabastecimiento de inventario',
+        },
+      });
+
+      return updated;
     });
   }
 }

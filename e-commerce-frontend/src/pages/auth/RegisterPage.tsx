@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 import { apiErrorMessage, saveSession } from '../../services/auth';
+import { notifyCartUpdated } from '../../context/CartCountContext';
+import { mergeGuestCart } from '../../services/guest-cart';
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
@@ -17,6 +19,8 @@ export const RegisterPage = () => {
     try {
       const { data } = await api.post('/auth/register', form);
       saveSession(data.user);
+      await mergeGuestCart().catch(() => undefined);
+      notifyCartUpdated();
       navigate('/', { replace: true });
     } catch (err) {
       setError(apiErrorMessage(err, 'No se pudo crear la cuenta.'));

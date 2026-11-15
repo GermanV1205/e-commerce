@@ -35,6 +35,11 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# Comprobantes e imágenes subidas en runtime
+/uploads/**
+!/uploads/.gitkeep
+!/uploads/receipts/.gitkeep
+
 # dotenv environment variable files (usa .env.example como plantilla)
 .env
 .env.development.local

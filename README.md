@@ -1,6 +1,6 @@
 # 🛍️ E-Commerce Full Stack Platform
 
-![Status](https://img.shields.io/badge/Status-En%20Desarrollo-brightgreen)
+![Status](https://img.shields.io/badge/Status-Listo%20para%20demo-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
 Una plataforma de comercio electrónico completa, escalable y didáctica diseñada para una tienda de ropa. Este proyecto está construido desde cero aplicando principios de Arquitectura de Software, Domain-Driven Design (DDD) ligero y buenas prácticas de DevOps.
@@ -32,9 +32,19 @@ Este sistema nace con un doble propósito:
 ![JWT](https://img.shields.io/badge/-JWT-000000?style=flat-square&logo=json-web-tokens&logoColor=white)
 
 **Otras Tecnologías:**
-* **Storage:** S3 Compatible
-* **Pruebas:** Jest + Playwright
-* **Proxy/Servidor:** Docker Compose + Caddy/Nginx
+* **Storage:** S3 compatible (MinIO en Docker; AWS S3 o R2 en la nube)
+* **Pruebas:** Jest (API) + Playwright (tienda)
+* **Proxy/Servidor:** Docker Compose + Nginx
+* **Correo:** SMTP opcional (si no hay servidor, queda en logs)
+
+```mermaid
+flowchart LR
+  Browser[Navegador] --> Web[Nginx / React]
+  Web --> Api[NestJS API]
+  Api --> Pg[(PostgreSQL)]
+  Api --> S3[(MinIO / S3)]
+  Api --> Smtp[SMTP opcional]
+```
 
 ---
 
@@ -55,6 +65,7 @@ Servicios disponibles:
 | API (NestJS) | http://localhost:3000/api/v1 |
 | Swagger | http://localhost:3000/api/docs |
 | pgAdmin | http://localhost:5050 |
+| MinIO (S3) | http://localhost:9000 — consola http://localhost:9001 |
 | PostgreSQL | `localhost:5433` |
 
 Las migraciones se aplican solas al arrancar el contenedor de la API. Para cargar
@@ -87,7 +98,25 @@ npm install && npm run dev
 Las genera `npm run db:seed` y se configuran con `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`:
 
 ```
-admin@tienda.com  /  Admin123!
+admin@tienda.com     /  Admin123!
+cliente@tienda.com   /  Cliente123!
+```
+
+### Pago por transferencia
+
+El checkout solo acepta **transferencia bancaria**. El cliente transfiere el total, sube una captura del comprobante (JPG/PNG/WEBP, máx. 5 MB) y el pedido se crea en estado **Pagada**. El admin ve el comprobante en `/admin/orders`.
+
+Puedes armar el carrito **sin cuenta**; al iniciar sesión se fusiona con el carrito del servidor. El pago sí requiere login.
+
+Configura la cuenta en `e-commerce-backend/.env` (y en el `.env` de la raíz si usas Docker):
+
+```
+TRANSFER_BANK_NAME=Banco Pichincha
+TRANSFER_ACCOUNT_TYPE=Ahorros
+TRANSFER_ACCOUNT=2100123456
+TRANSFER_HOLDER=Tienda de Ropa
+TRANSFER_ID=
+TRANSFER_CURRENCY=USD
 ```
 
 ### Scripts útiles del backend
@@ -104,6 +133,31 @@ admin@tienda.com  /  Admin123!
 
 ---
 
+## 🚢 Producción (VPS o demo de portafolio)
+
+Detalle operativo: [`docs/05-devops/docker-ci-cd.md`](docs/05-devops/docker-ci-cd.md).
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+Eso apaga Swagger, marca `NODE_ENV=production` y deja pgAdmin fuera (perfil `tools`). Pon un proxy TLS delante de `localhost:5173` (nginx del contenedor `web`).
+
+Variables críticas: `JWT_SECRET`, `CORS_ORIGIN`, `FRONTEND_URL`, `TRANSFER_*`, `STORAGE_DRIVER`/`S3_*`, y si quieres avisos reales `SMTP_*`.
+
+Health: `GET http://localhost:3000/api/v1/health` y `/api/v1/health/ready`.
+
+### Playwright
+
+Desde `e-commerce-frontend`, con la API arriba y un `npm run build`:
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+```
+
+---
+
 ## 🏗️ Enfoque de Ingeniería (Roles Asumidos)
 
 Para garantizar la calidad empresarial del proyecto, el desarrollo se rige bajo las siguientes perspectivas:
@@ -117,14 +171,14 @@ Para garantizar la calidad empresarial del proyecto, el desarrollo se rige bajo 
 ## 📦 Estructura de Módulos
 
 El sistema está compuesto por los siguientes módulos Core funcionales:
-- [ ] Catálogo y Gestión de Variantes
-- [ ] Carrito de Compras y Checkout
-- [ ] Gestión de Pedidos y Devoluciones
-- [ ] Clientes y Autenticación
-- [ ] Inventario y Compras
-- [ ] Administración y Reportes
-- [ ] Usuarios y Control de Roles (RBAC: Admin, Vendedor, Cliente)
-- [ ] Soporte y Notas Internas
+- [x] Catálogo y Gestión de Variantes
+- [x] Carrito de Compras y Checkout (invitado + sesión)
+- [x] Gestión de Pedidos y Devoluciones
+- [x] Clientes y Autenticación
+- [x] Inventario y Compras
+- [x] Administración y Reportes
+- [x] Usuarios y Control de Roles (RBAC: Admin, Vendedor, Cliente)
+- [x] Soporte y Notas Internas
 
 ---
 

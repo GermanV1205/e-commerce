@@ -1,137 +1,247 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { OrderStatus } from '@prisma/client'; // Importamos el Enum estricto de Prisma
+import { paymentReferenceFromOrderId } from './payment-reference';
+import { Role } from '../auth/enums/role.enum';
+import { MailService } from '../mail/mail.service';
+
+const orderDetailInclude = {
+  items: {
+    include: {
+      productVariant: { include: { product: true } },
+    },
+  },
+  shippingAddress: true,
+  payment: true,
+} satisfies Prisma.OrderInclude;
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+    private readonly mail: MailService,
+  ) {}
 
-  async checkout(userId: string, createOrderDto: CreateOrderDto) {
-    const cart = await this.prisma.cart.findUnique({
-      where: { userId },
-      include: {
-        items: {
-          include: { productVariant: true },
-        },
-      },
-    });
+  getTransferInstructions() {
+    return {
+      method: 'TRANSFER' as const,
+      bankName: this.config.get<string>('TRANSFER_BANK_NAME', 'Banco Pichincha'),
+      accountType: this.config.get<string>('TRANSFER_ACCOUNT_TYPE', 'Ahorros'),
+      accountNumber: this.config.get<string>('TRANSFER_ACCOUNT', '2100123456'),
+      holder: this.config.get<string>('TRANSFER_HOLDER', 'Tienda de Ropa'),
+      identification: this.config.get<string>('TRANSFER_ID', ''),
+      currency: this.config.get<string>('TRANSFER_CURRENCY', 'USD'),
+    };
+  }
 
-    if (!cart || cart.items.length === 0) {
-      throw new BadRequestException('El carrito está vacío');
+  async checkout(userId: string, createOrderDto: CreateOrderDto, receiptUrl: string) {
+    if (!receiptUrl) {
+      throw new BadRequestException('Sube la captura del comprobante de transferencia.');
     }
 
-    for (const item of cart.items) {
-      if (item.productVariant.stock < item.quantity) {
-        throw new BadRequestException(`El producto con SKU ${item.productVariant.sku} no tiene stock suficiente.`);
-      }
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('El usuario no existe');
     }
 
-    const calculatedTotal = cart.items.reduce((total, item) => {
-      return total + (Number(item.productVariant.price) * item.quantity);
-    }, 0);
+    const currency = this.config.get<string>('TRANSFER_CURRENCY', 'USD');
 
-    return this.prisma.$transaction(async (tx) => {
-      const newAddress = await tx.address.create({
-        data: {
-          userId: userId,
-          street: createOrderDto.shippingAddress,
-          city: 'Quito',
-          state: 'Pichincha',
-          zipCode: '170100',
+    const order = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM carts WHERE user_id = ${userId}::uuid FOR UPDATE`;
+
+      const cart = await tx.cart.findUnique({
+        where: { userId },
+        include: {
+          items: { include: { productVariant: { include: { product: true } } } },
         },
       });
 
-      const order = await tx.order.create({
+      if (!cart || cart.items.length === 0) {
+        throw new BadRequestException('El carrito está vacío');
+      }
+
+      const variantIds = cart.items.map((item) => item.productVariantId);
+      await tx.$queryRaw`
+        SELECT id FROM product_variants
+        WHERE id IN (${Prisma.join(variantIds)})
+        FOR UPDATE
+      `;
+
+      const calculatedTotal = cart.items.reduce((total, item) => {
+        return total + Number(item.productVariant.price) * item.quantity;
+      }, 0);
+
+      for (const item of cart.items) {
+        const reserved = await tx.productVariant.updateMany({
+          where: {
+            id: item.productVariantId,
+            stock: { gte: item.quantity },
+          },
+          data: { stock: { decrement: item.quantity } },
+        });
+
+        if (reserved.count !== 1) {
+          throw new BadRequestException(
+            `El producto con SKU ${item.productVariant.sku} no tiene stock suficiente.`,
+          );
+        }
+      }
+
+      let shippingAddressId: string;
+      if (createOrderDto.addressId) {
+        const saved = await tx.address.findFirst({
+          where: { id: createOrderDto.addressId, userId },
+        });
+        if (!saved) {
+          throw new BadRequestException('La dirección guardada no existe');
+        }
+        shippingAddressId = saved.id;
+      } else {
+        const addressCount = await tx.address.count({ where: { userId } });
+        const createdAddress = await tx.address.create({
+          data: {
+            userId,
+            street: createOrderDto.shippingAddress!,
+            city: createOrderDto.city!,
+            state: createOrderDto.state!,
+            zipCode: createOrderDto.zipCode!,
+            isDefault: createOrderDto.saveAddress === true && addressCount === 0,
+          },
+        });
+        shippingAddressId = createdAddress.id;
+      }
+
+      const created = await tx.order.create({
         data: {
-          userId: userId,
+          userId,
           totalAmount: calculatedTotal,
-          status: 'PENDING',
-          shippingAddressId: newAddress.id, 
+          status: OrderStatus.PAID,
+          shippingAddressId,
         },
       });
 
       for (const item of cart.items) {
         const itemSubtotal = Number(item.productVariant.price) * item.quantity;
-
         await tx.orderItem.create({
           data: {
-            orderId: order.id,
+            orderId: created.id,
             productVariantId: item.productVariantId,
             quantity: item.quantity,
             unitPrice: item.productVariant.price,
-            subtotal: itemSubtotal, 
+            subtotal: itemSubtotal,
           },
-        });
-
-        await tx.productVariant.update({
-          where: { id: item.productVariantId },
-          data: { stock: { decrement: item.quantity } },
         });
       }
 
-      await tx.cartItem.deleteMany({
-        where: { cartId: cart.id },
+      if (createOrderDto.notes?.trim()) {
+        await tx.orderNote.create({
+          data: {
+            orderId: created.id,
+            authorId: userId,
+            content: createOrderDto.notes.trim(),
+          },
+        });
+      }
+
+      await tx.payment.create({
+        data: {
+          orderId: created.id,
+          reference: paymentReferenceFromOrderId(created.id),
+          amount: calculatedTotal,
+          currency,
+          status: PaymentStatus.APPROVED,
+          paymentMethodName: 'Transferencia bancaria',
+          receiptUrl,
+          statusMessage: 'Comprobante de transferencia subido por el cliente',
+        },
       });
 
-      return order;
+      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+
+      return tx.order.findUniqueOrThrow({
+        where: { id: created.id },
+        include: orderDetailInclude,
+      });
     });
+
+    void this.mail.notifyOrderPaid(user.email, {
+      id: order.id,
+      totalAmount: Number(order.totalAmount),
+    });
+
+    return order;
   }
 
   async findMyOrders(userId: string) {
     return this.prisma.order.findMany({
       where: { userId },
-      include: {
-        items: {
-          include: {
-            productVariant: {
-              include: { product: true },
-            },
-          },
-        },
-        shippingAddress: true, 
-      },
+      include: orderDetailInclude,
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  // --- MÉTODOS DE ADMINISTRACIÓN ---
+  async findOne(id: string, actor: { userId: string; role: string }) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        ...orderDetailInclude,
+        user: {
+          select: { id: true, email: true, firstName: true, lastName: true },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`La orden con ID ${id} no fue encontrada`);
+    }
+
+    const isStaff = actor.role === Role.ADMIN || actor.role === Role.SELLER;
+    if (!isStaff && order.userId !== actor.userId) {
+      throw new NotFoundException(`La orden con ID ${id} no fue encontrada`);
+    }
+
+    return order;
+  }
 
   async findAllOrders() {
     return this.prisma.order.findMany({
       include: {
-        items: {
-          include: {
-            productVariant: { include: { product: true } },
-          },
+        ...orderDetailInclude,
+        user: {
+          select: { id: true, email: true, firstName: true, lastName: true },
         },
-        shippingAddress: true,
-        user: { 
-          // Si tienes otro campo como 'firstName', puedes agregarlo aquí. 
-          // Por ahora, solo extraemos id y email para evitar el error TS2353.
-          select: { id: true, email: true } 
-        } 
       },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  // Cambiamos el tipo de string a OrderStatus (el enum de Prisma)
-  async updateOrderStatus(id: string, status: OrderStatus) {
+  async updateOrderStatus(id: string, status: OrderStatus, trackingNumber?: string) {
     const order = await this.prisma.order.findUnique({ where: { id } });
-    
+
     if (!order) {
       throw new NotFoundException(`La orden con ID ${id} no fue encontrada`);
     }
 
     return this.prisma.order.update({
       where: { id },
-      data: { status },
+      data: {
+        status,
+        ...(trackingNumber !== undefined
+          ? { trackingNumber: trackingNumber.trim() || null }
+          : {}),
+      },
+      include: orderDetailInclude,
     });
   }
 
   async processReturn(id: string) {
-    // 1. Buscamos la orden y sus items (para saber qué productos devolver)
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: { items: true },
@@ -141,42 +251,39 @@ export class OrdersService {
       throw new NotFoundException(`La orden con ID ${id} no fue encontrada`);
     }
 
-    // 2. Validamos que no se intente devolver algo que ya fue cancelado o devuelto
-    if (order.status === 'RETURNED' || order.status === 'CANCELLED') {
-      throw new BadRequestException('Esta orden ya ha sido devuelta o cancelada previamente');
+    if (
+      order.status !== OrderStatus.PAID &&
+      order.status !== OrderStatus.SHIPPED &&
+      order.status !== OrderStatus.DELIVERED
+    ) {
+      throw new BadRequestException(
+        'Solo se pueden devolver pedidos pagados, enviados o entregados',
+      );
     }
 
-    // 3. Ejecutamos la Transacción ACID
     return this.prisma.$transaction(async (tx) => {
-      // Paso A: Cambiar el estado de la orden
       const updatedOrder = await tx.order.update({
         where: { id },
-        data: { status: 'RETURNED' },
+        data: { status: OrderStatus.RETURNED },
       });
 
-      // Paso B: Devolver el inventario a la tienda (Incrementar stock)
       for (const item of order.items) {
         await tx.productVariant.update({
           where: { id: item.productVariantId },
-          data: { 
-            stock: { increment: item.quantity } // Prisma suma automáticamente la cantidad
-          },
+          data: { stock: { increment: item.quantity } },
         });
       }
 
       return updatedOrder;
     });
   }
-  // --- MÓDULO DE SOPORTE Y NOTAS INTERNAS ---
 
   async addInternalNote(orderId: string, authorId: string, content: string) {
-    // Validamos que la orden exista
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (!order) {
       throw new NotFoundException(`La orden con ID ${orderId} no existe`);
     }
 
-    // Creamos la nota y devolvemos los datos del autor para confirmación visual
     return this.prisma.orderNote.create({
       data: {
         orderId,
@@ -185,7 +292,7 @@ export class OrdersService {
       },
       include: {
         author: {
-          select: { firstName: true, lastName: true, email: true, role: true }, 
+          select: { firstName: true, lastName: true, email: true, role: true },
         },
       },
     });

@@ -1,0 +1,7 @@
+services:
+  pgadmin:
+    profiles: ["tools"]
+  api:
+    environment:
+      NODE_ENV: production
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}

@@ -2,9 +2,11 @@ import { extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { BadRequestException } from '@nestjs/common';
 
-// 1. Filtro de seguridad: Solo permitimos imágenes
-export const fileFilter = (req: any, file: Express.Multer.File, callback: Function) => {
-  if (!file.originalname.match(/\.(jpg|jpeg|png|webp)$/)) {
+const ALLOWED_EXT = /\.(jpe?g|png|webp)$/i;
+const ALLOWED_MIME = /^image\/(jpeg|jpg|png|webp)$/i;
+
+export const fileFilter = (_req: unknown, file: Express.Multer.File, callback: Function) => {
+  if (!ALLOWED_EXT.test(file.originalname) || !ALLOWED_MIME.test(file.mimetype)) {
     return callback(
       new BadRequestException('Formato inválido. Solo se permiten imágenes (jpg, jpeg, png, webp)'),
       false,
@@ -13,9 +15,7 @@ export const fileFilter = (req: any, file: Express.Multer.File, callback: Functi
   callback(null, true);
 };
 
-// 2. Renombrado criptográfico: Evita colisiones y ofusca el nombre original
-export const editFileName = (req: any, file: Express.Multer.File, callback: Function) => {
-  const fileExtName = extname(file.originalname);
-  const randomName = uuidv4();
-  callback(null, `${randomName}${fileExtName}`);
+export const editFileName = (_req: unknown, file: Express.Multer.File, callback: Function) => {
+  const fileExtName = extname(file.originalname).toLowerCase();
+  callback(null, `${uuidv4()}${fileExtName}`);
 };

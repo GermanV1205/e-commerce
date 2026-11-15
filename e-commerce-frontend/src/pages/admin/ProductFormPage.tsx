@@ -61,6 +61,18 @@ export const ProductFormPage = () => {
           categoryId: data.categoryId,
           slug: data.slug,
         });
+        if (data.variants?.length) {
+          setVariants(
+            data.variants.map((variant) => ({
+              id: variant.id,
+              size: variant.size,
+              color: variant.color,
+              sku: variant.sku,
+              price: Number(variant.price),
+              stock: variant.stock,
+            })),
+          );
+        }
       } catch (err) {
         setFormError(apiErrorMessage(err, 'No pudimos cargar el producto.'));
       }
@@ -84,10 +96,31 @@ export const ProductFormPage = () => {
     }
   };
 
+  const [restockQty, setRestockQty] = useState<Record<string, number>>({});
+
+  const handleRestock = async (variantId: string) => {
+    const quantity = restockQty[variantId] ?? 0;
+    if (quantity < 1) {
+      setFormError('Indica cuántas unidades quieres agregar.');
+      return;
+    }
+    setFormError(null);
+    try {
+      const { data } = await api.patch<{ id: string; stock: number }>(
+        `/products/variants/${variantId}/restock`,
+        { quantity },
+      );
+      setVariants((current) =>
+        current.map((variant) => (variant.id === variantId ? { ...variant, stock: data.stock } : variant)),
+      );
+      setRestockQty((current) => ({ ...current, [variantId]: 0 }));
+    } catch (err) {
+      setFormError(apiErrorMessage(err, 'No se pudo reabastecer la variante.'));
+    }
+  };
+
   const handleVariantChange = (id: string, field: keyof VariantInput, value: string | number) => {
-    setVariants(variants.map(v => 
-      v.id === id ? { ...v, [field]: value } : v
-    ));
+    setVariants(variants.map((v) => (v.id === id ? { ...v, [field]: value } : v)));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -253,6 +286,42 @@ export const ProductFormPage = () => {
             ))}
           </div>
         </div>}
+
+        {isEdit && (
+          <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">Inventario (reabastecer)</h2>
+            <div className="space-y-3">
+              {variants.map((variant) => (
+                <div key={variant.id} className="flex flex-wrap items-center gap-3 border border-gray-100 rounded-md p-3 bg-gray-50">
+                  <p className="text-sm text-gray-800 flex-1">
+                    {variant.sku} · {variant.size} · {variant.color}
+                    <span className="ml-2 text-gray-500">Stock: {variant.stock}</span>
+                  </p>
+                  <input
+                    type="number"
+                    min={1}
+                    value={restockQty[variant.id] || ''}
+                    onChange={(e) =>
+                      setRestockQty((current) => ({
+                        ...current,
+                        [variant.id]: parseInt(e.target.value, 10) || 0,
+                      }))
+                    }
+                    className="w-24 border border-gray-300 rounded-md px-2 py-1 text-sm"
+                    placeholder="Cant."
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRestock(variant.id)}
+                    className="text-sm bg-black text-white px-3 py-1.5 rounded-md"
+                  >
+                    Agregar
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Botones de Acción */}
         <div className="flex justify-end space-x-3">

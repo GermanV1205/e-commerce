@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Get,
+  Patch,
   UseGuards,
   Request,
   Res,
@@ -16,6 +17,7 @@ import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { REFRESH_COOKIE } from './auth-cookies';
 
@@ -71,7 +73,18 @@ export class AuthController {
   @ApiOperation({ summary: 'Obtener el perfil del usuario autenticado' })
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  getProfile(@Request() req: { user: { userId: string; email: string; role: string } }) {
-    return { user: req.user };
+  getProfile(@Request() req: { user: { userId: string } }) {
+    return this.authService.getProfile(req.user.userId);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar nombre y apellido' })
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  updateProfile(
+    @Request() req: { user: { userId: string } },
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.authService.updateProfile(req.user.userId, dto);
   }
 }
