@@ -84,7 +84,7 @@ export class ProductsService {
   async updateProductImage(id: string, imageUrl: string) {
     // 1. Verificamos que el producto exista antes de intentar actualizarlo
     const product = await this.prisma.product.findUnique({ where: { id } });
-    
+
     if (!product) {
       throw new NotFoundException(`El producto con ID ${id} no existe`);
     }
@@ -104,7 +104,9 @@ export class ProductsService {
     });
 
     if (!variant) {
-      throw new NotFoundException(`La variante con ID ${variantId} no fue encontrada en el sistema`);
+      throw new NotFoundException(
+        `La variante con ID ${variantId} no fue encontrada en el sistema`,
+      );
     }
 
     return this.prisma.$transaction(async (tx) => {

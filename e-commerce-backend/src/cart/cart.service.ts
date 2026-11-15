@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateCartDto } from './dto/create-cart.dto';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -11,9 +15,12 @@ export class CartService {
       where: { id: createCartDto.productVariantId },
     });
 
-    if (!variant) throw new NotFoundException('La variante del producto no existe');
+    if (!variant)
+      throw new NotFoundException('La variante del producto no existe');
     if (variant.stock < createCartDto.quantity) {
-      throw new BadRequestException(`Stock insuficiente. Solo quedan ${variant.stock} unidades.`);
+      throw new BadRequestException(
+        `Stock insuficiente. Solo quedan ${variant.stock} unidades.`,
+      );
     }
 
     let cart = await this.prisma.cart.findUnique({ where: { userId } });
@@ -22,13 +29,18 @@ export class CartService {
     }
 
     const existingItem = await this.prisma.cartItem.findFirst({
-      where: { cartId: cart.id, productVariantId: createCartDto.productVariantId },
+      where: {
+        cartId: cart.id,
+        productVariantId: createCartDto.productVariantId,
+      },
     });
 
     if (existingItem) {
       const newQuantity = existingItem.quantity + createCartDto.quantity;
       if (variant.stock < newQuantity) {
-        throw new BadRequestException('El stock no cubre la cantidad total en tu carrito');
+        throw new BadRequestException(
+          'El stock no cubre la cantidad total en tu carrito',
+        );
       }
       await this.prisma.cartItem.update({
         where: { id: existingItem.id },
@@ -47,7 +59,10 @@ export class CartService {
     return this.getCart(userId);
   }
 
-  async mergeGuestItems(userId: string, items: { productVariantId: string; quantity: number }[]) {
+  async mergeGuestItems(
+    userId: string,
+    items: { productVariantId: string; quantity: number }[],
+  ) {
     let cart = await this.getCart(userId);
     for (const item of items) {
       cart = await this.addItemToCart(userId, item);

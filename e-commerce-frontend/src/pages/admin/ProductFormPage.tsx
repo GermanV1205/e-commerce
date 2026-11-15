@@ -29,6 +29,10 @@ export const ProductFormPage = () => {
     categoryId: '',
     slug: '',
   });
+  const [variants, setVariants] = useState<VariantInput[]>([
+    { id: '1', size: '', color: '', sku: '', price: 0, stock: 0 },
+  ]);
+  const [restockQty, setRestockQty] = useState<Record<string, number>>({});
 
   // Las categorías las manda el backend: el categoryId debe ser un UUID que
   // exista de verdad o el INSERT viola la clave foránea.
@@ -81,11 +85,6 @@ export const ProductFormPage = () => {
     loadProduct();
   }, [id]);
 
-  // Estado dinámico de las variantes
-  const [variants, setVariants] = useState<VariantInput[]>([
-    { id: '1', size: '', color: '', sku: '', price: 0, stock: 0 }
-  ]);
-
   const handleAddVariant = () => {
     setVariants([...variants, { id: Date.now().toString(), size: '', color: '', sku: '', price: 0, stock: 0 }]);
   };
@@ -95,8 +94,6 @@ export const ProductFormPage = () => {
       setVariants(variants.filter(v => v.id !== id));
     }
   };
-
-  const [restockQty, setRestockQty] = useState<Record<string, number>>({});
 
   const handleRestock = async (variantId: string) => {
     const quantity = restockQty[variantId] ?? 0;

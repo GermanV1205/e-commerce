@@ -1,5 +1,22 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
 
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -21,17 +38,27 @@ export class ProductsController {
   // ====================================================================
   // RUTAS PÚBLICAS (Disponibles para la tienda de tu mamá / Frontend)
   // ====================================================================
-  
-  @ApiOperation({ summary: 'Obtener todo el catálogo de productos con sus variantes' })
-  @ApiResponse({ status: 200, description: 'Catálogo recuperado exitosamente.' })
+
+  @ApiOperation({
+    summary: 'Obtener todo el catálogo de productos con sus variantes',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Catálogo recuperado exitosamente.',
+  })
   @Get()
   findAll(@Query('categoryId') categoryId?: string) {
     return this.productsService.findAll(categoryId || undefined);
   }
 
-  @ApiOperation({ summary: 'Obtener el detalle de un producto específico por ID' })
+  @ApiOperation({
+    summary: 'Obtener el detalle de un producto específico por ID',
+  })
   @ApiParam({ name: 'id', description: 'UUID del producto' })
-  @ApiResponse({ status: 200, description: 'Producto encontrado exitosamente.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Producto encontrado exitosamente.',
+  })
   @ApiResponse({ status: 404, description: 'El producto no existe.' })
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -43,9 +70,18 @@ export class ProductsController {
   // ====================================================================
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Crear un nuevo producto junto con sus variantes (Transacción ACID)' })
-  @ApiResponse({ status: 201, description: 'Producto y variantes registrados exitosamente.' })
-  @ApiResponse({ status: 401, description: 'No autorizado. Token inválido o ausente.' })
+  @ApiOperation({
+    summary:
+      'Crear un nuevo producto junto con sus variantes (Transacción ACID)',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Producto y variantes registrados exitosamente.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'No autorizado. Token inválido o ausente.',
+  })
   @ApiResponse({ status: 403, description: 'Prohibido. Requiere rol ADMIN.' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
@@ -71,29 +107,49 @@ export class ProductsController {
   remove(@Param('id') id: string) {
     return this.productsService.remove(id);
   }
-  
+
   @ApiBearerAuth() // Indica en Swagger que esta ruta requiere el candado JWT
   @ApiOperation({ summary: 'Actualizar la imagen estática de un producto' })
   @ApiParam({ name: 'id', description: 'UUID del producto' })
   @ApiResponse({ status: 200, description: 'Imagen vinculada exitosamente.' })
-  @ApiResponse({ status: 401, description: 'No autorizado. Token inválido o ausente.' })
-  @ApiResponse({ status: 403, description: 'Prohibido. Requiere rol ADMIN o SELLER.' })
+  @ApiResponse({
+    status: 401,
+    description: 'No autorizado. Token inválido o ausente.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Prohibido. Requiere rol ADMIN o SELLER.',
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SELLER)
   @Patch(':id/image')
   updateImage(
-    @Param('id') id: string, 
-    @Body() updateProductImageDto: UpdateProductImageDto
+    @Param('id') id: string,
+    @Body() updateProductImageDto: UpdateProductImageDto,
   ) {
-    return this.productsService.updateProductImage(id, updateProductImageDto.imageUrl);
+    return this.productsService.updateProductImage(
+      id,
+      updateProductImageDto.imageUrl,
+    );
   }
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Abastecer inventario de una variante (Restock atómico)' })
-  @ApiParam({ name: 'variantId', description: 'UUID de la variante del producto' })
-  @ApiResponse({ status: 200, description: 'Inventario actualizado mediante transacción ACID.' })
+  @ApiOperation({
+    summary: 'Abastecer inventario de una variante (Restock atómico)',
+  })
+  @ApiParam({
+    name: 'variantId',
+    description: 'UUID de la variante del producto',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Inventario actualizado mediante transacción ACID.',
+  })
   @ApiResponse({ status: 401, description: 'No autorizado.' })
-  @ApiResponse({ status: 403, description: 'Prohibido. Requiere rol ADMIN o SELLER.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Prohibido. Requiere rol ADMIN o SELLER.',
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SELLER)
   @Patch('variants/:variantId/restock')
@@ -102,6 +158,10 @@ export class ProductsController {
     @Param('variantId') variantId: string,
     @Body() restockDto: RestockVariantDto,
   ) {
-    return this.productsService.restockVariant(variantId, restockDto.quantity, req.user.userId);
+    return this.productsService.restockVariant(
+      variantId,
+      restockDto.quantity,
+      req.user.userId,
+    );
   }
 }

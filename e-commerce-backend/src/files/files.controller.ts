@@ -1,7 +1,21 @@
-import { Controller, Post, UseInterceptors, UploadedFile, BadRequestException, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  UseGuards,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { fileFilter } from './helpers/image-storage.helper';
 import { StorageService } from './storage.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -16,7 +30,9 @@ import { Role } from '../auth/enums/role.enum';
 export class FilesController {
   constructor(private readonly storage: StorageService) {}
 
-  @ApiOperation({ summary: 'Subir una imagen para el catálogo (disco local o S3/MinIO)' })
+  @ApiOperation({
+    summary: 'Subir una imagen para el catálogo (disco local o S3/MinIO)',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -30,7 +46,10 @@ export class FilesController {
       },
     },
   })
-  @ApiResponse({ status: 201, description: 'Imagen subida. Devuelve la URL pública.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Imagen subida. Devuelve la URL pública.',
+  })
   @Roles(Role.ADMIN, Role.SELLER)
   @Post('product-image')
   @UseInterceptors(
@@ -42,7 +61,9 @@ export class FilesController {
   )
   async uploadProductImage(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
-      throw new BadRequestException('Asegúrese de enviar un archivo de imagen válido');
+      throw new BadRequestException(
+        'Asegúrese de enviar un archivo de imagen válido',
+      );
     }
 
     const url = await this.storage.put('products', file);

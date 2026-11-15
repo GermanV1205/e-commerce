@@ -12,12 +12,20 @@ export class MailService {
 
   constructor(private readonly config: ConfigService) {
     const host = this.config.get<string>('SMTP_HOST');
-    this.from = this.config.get<string>('MAIL_FROM', 'TiendaRopa <noreply@tiendaropa.local>');
-    this.frontendUrl = this.config.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    this.from = this.config.get<string>(
+      'MAIL_FROM',
+      'TiendaRopa <noreply@tiendaropa.local>',
+    );
+    this.frontendUrl = this.config.get<string>(
+      'FRONTEND_URL',
+      'http://localhost:5173',
+    );
 
     if (!host) {
       this.transporter = null;
-      this.logger.log('SMTP no configurado: los correos se registran en el log');
+      this.logger.log(
+        'SMTP no configurado: los correos se registran en el log',
+      );
       return;
     }
 
@@ -34,7 +42,10 @@ export class MailService {
     });
   }
 
-  async notifyOrderPaid(to: string, order: { id: string; totalAmount: number | string }) {
+  async notifyOrderPaid(
+    to: string,
+    order: { id: string; totalAmount: number | string },
+  ) {
     const subject = `Pedido confirmado · ${order.id.slice(0, 8)}`;
     const total = Number(order.totalAmount).toFixed(2);
     const text = [

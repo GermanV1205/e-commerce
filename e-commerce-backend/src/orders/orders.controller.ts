@@ -12,7 +12,14 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -26,7 +33,7 @@ import { fileFilter } from '../files/helpers/image-storage.helper';
 import { StorageService } from '../files/storage.service';
 
 type AuthRequest = {
-  user: { userId?: string; sub?: string; role: string };
+  user: { userId?: string; sub?: string; role: Role };
 };
 
 const actor = (req: AuthRequest) => ({
@@ -50,7 +57,10 @@ export class OrdersController {
     return this.ordersService.getTransferInstructions();
   }
 
-  @ApiOperation({ summary: 'Checkout por transferencia: reserva stock y adjunta el comprobante' })
+  @ApiOperation({
+    summary:
+      'Checkout por transferencia: reserva stock y adjunta el comprobante',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -68,7 +78,10 @@ export class OrdersController {
       },
     },
   })
-  @ApiResponse({ status: 201, description: 'Pedido creado en estado pagado con el comprobante.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Pedido creado en estado pagado con el comprobante.',
+  })
   @Post('checkout')
   @UseInterceptors(
     FileInterceptor('receipt', {
@@ -83,10 +96,16 @@ export class OrdersController {
     @UploadedFile() receipt: Express.Multer.File,
   ) {
     if (!receipt) {
-      throw new BadRequestException('Sube la captura del comprobante de transferencia.');
+      throw new BadRequestException(
+        'Sube la captura del comprobante de transferencia.',
+      );
     }
     const receiptUrl = await this.storage.put('receipts', receipt);
-    return this.ordersService.checkout(actor(req).userId, createOrderDto, receiptUrl);
+    return this.ordersService.checkout(
+      actor(req).userId,
+      createOrderDto,
+      receiptUrl,
+    );
   }
 
   @ApiOperation({ summary: 'Historial de compras del cliente autenticado' })
@@ -95,7 +114,9 @@ export class OrdersController {
     return this.ordersService.findMyOrders(actor(req).userId);
   }
 
-  @ApiOperation({ summary: 'Detalle de un pedido propio o, si es staff, de cualquiera' })
+  @ApiOperation({
+    summary: 'Detalle de un pedido propio o, si es staff, de cualquiera',
+  })
   @Get(':id')
   findOne(@Param('id') id: string, @Request() req: AuthRequest) {
     return this.ordersService.findOne(id, actor(req));
@@ -111,7 +132,10 @@ export class OrdersController {
   @ApiOperation({ summary: 'Actualizar el estado logístico de una orden' })
   @Roles(Role.ADMIN, Role.SELLER)
   @Patch(':id/status')
-  updateStatus(@Param('id') id: string, @Body() updateOrderStatusDto: UpdateOrderStatusDto) {
+  updateStatus(
+    @Param('id') id: string,
+    @Body() updateOrderStatusDto: UpdateOrderStatusDto,
+  ) {
     return this.ordersService.updateOrderStatus(
       id,
       updateOrderStatusDto.status,
@@ -134,6 +158,10 @@ export class OrdersController {
     @Request() req: AuthRequest,
     @Body() noteDto: CreateOrderNoteDto,
   ) {
-    return this.ordersService.addInternalNote(orderId, actor(req).userId, noteDto.content);
+    return this.ordersService.addInternalNote(
+      orderId,
+      actor(req).userId,
+      noteDto.content,
+    );
   }
 }

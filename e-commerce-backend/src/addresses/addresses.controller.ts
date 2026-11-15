@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AddressesService } from './addresses.service';
 import { CreateAddressDto } from './dto/create-address.dto';
@@ -28,11 +38,17 @@ export class AddressesController {
 
   @ApiOperation({ summary: 'Actualizar una dirección propia' })
   @Patch(':id')
-  update(@Request() req: AuthRequest, @Param('id') id: string, @Body() dto: UpdateAddressDto) {
+  update(
+    @Request() req: AuthRequest,
+    @Param('id') id: string,
+    @Body() dto: UpdateAddressDto,
+  ) {
     return this.addresses.update(req.user.userId, id, dto);
   }
 
-  @ApiOperation({ summary: 'Eliminar una dirección que no esté ligada a pedidos' })
+  @ApiOperation({
+    summary: 'Eliminar una dirección que no esté ligada a pedidos',
+  })
   @Delete(':id')
   remove(@Request() req: AuthRequest, @Param('id') id: string) {
     return this.addresses.remove(req.user.userId, id);

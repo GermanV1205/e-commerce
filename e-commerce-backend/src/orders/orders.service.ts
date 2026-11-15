@@ -32,7 +32,10 @@ export class OrdersService {
   getTransferInstructions() {
     return {
       method: 'TRANSFER' as const,
-      bankName: this.config.get<string>('TRANSFER_BANK_NAME', 'Banco Pichincha'),
+      bankName: this.config.get<string>(
+        'TRANSFER_BANK_NAME',
+        'Banco Pichincha',
+      ),
       accountType: this.config.get<string>('TRANSFER_ACCOUNT_TYPE', 'Ahorros'),
       accountNumber: this.config.get<string>('TRANSFER_ACCOUNT', '2100123456'),
       holder: this.config.get<string>('TRANSFER_HOLDER', 'Tienda de Ropa'),
@@ -41,9 +44,15 @@ export class OrdersService {
     };
   }
 
-  async checkout(userId: string, createOrderDto: CreateOrderDto, receiptUrl: string) {
+  async checkout(
+    userId: string,
+    createOrderDto: CreateOrderDto,
+    receiptUrl: string,
+  ) {
     if (!receiptUrl) {
-      throw new BadRequestException('Sube la captura del comprobante de transferencia.');
+      throw new BadRequestException(
+        'Sube la captura del comprobante de transferencia.',
+      );
     }
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -59,7 +68,9 @@ export class OrdersService {
       const cart = await tx.cart.findUnique({
         where: { userId },
         include: {
-          items: { include: { productVariant: { include: { product: true } } } },
+          items: {
+            include: { productVariant: { include: { product: true } } },
+          },
         },
       });
 
@@ -112,7 +123,8 @@ export class OrdersService {
             city: createOrderDto.city!,
             state: createOrderDto.state!,
             zipCode: createOrderDto.zipCode!,
-            isDefault: createOrderDto.saveAddress === true && addressCount === 0,
+            isDefault:
+              createOrderDto.saveAddress === true && addressCount === 0,
           },
         });
         shippingAddressId = createdAddress.id;
@@ -187,7 +199,7 @@ export class OrdersService {
     });
   }
 
-  async findOne(id: string, actor: { userId: string; role: string }) {
+  async findOne(id: string, actor: { userId: string; role: Role }) {
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: {
@@ -222,7 +234,11 @@ export class OrdersService {
     });
   }
 
-  async updateOrderStatus(id: string, status: OrderStatus, trackingNumber?: string) {
+  async updateOrderStatus(
+    id: string,
+    status: OrderStatus,
+    trackingNumber?: string,
+  ) {
     const order = await this.prisma.order.findUnique({ where: { id } });
 
     if (!order) {
@@ -279,7 +295,9 @@ export class OrdersService {
   }
 
   async addInternalNote(orderId: string, authorId: string, content: string) {
-    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
     if (!order) {
       throw new NotFoundException(`La orden con ID ${orderId} no existe`);
     }

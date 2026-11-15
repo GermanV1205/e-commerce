@@ -17,7 +17,9 @@ import { JwtStrategy } from './strategies/jwt.strategy'; // <-- Importar aquí
       useFactory: (configService: ConfigService): JwtModuleOptions => {
         const secret = configService.get<string>('JWT_SECRET');
         if (!secret) {
-          throw new Error('JWT_SECRET no está definido. Revisa tu archivo .env');
+          throw new Error(
+            'JWT_SECRET no está definido. Revisa tu archivo .env',
+          );
         }
         return {
           secret,

@@ -35,13 +35,15 @@ describe('CartService', () => {
   });
 
   it('crea el carrito y agrega el primer item', async () => {
-    prisma.productVariant.findUnique.mockResolvedValue({ id: 'v1', stock: 10, price: 20 });
-    prisma.cart.findUnique
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({
-        id: 'c1',
-        items: [{ quantity: 2, productVariant: { price: 20 } }],
-      });
+    prisma.productVariant.findUnique.mockResolvedValue({
+      id: 'v1',
+      stock: 10,
+      price: 20,
+    });
+    prisma.cart.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      id: 'c1',
+      items: [{ quantity: 2, productVariant: { price: 20 } }],
+    });
     prisma.cart.create.mockResolvedValue({ id: 'c1', userId: 'user-1' });
     prisma.cartItem.findFirst.mockResolvedValue(null);
 
@@ -56,13 +58,15 @@ describe('CartService', () => {
   });
 
   it('fusiona líneas de un carrito de invitado', async () => {
-    prisma.productVariant.findUnique.mockResolvedValue({ id: 'v1', stock: 10, price: 20 });
-    prisma.cart.findUnique
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({
-        id: 'c1',
-        items: [{ quantity: 1, productVariant: { price: 20 } }],
-      });
+    prisma.productVariant.findUnique.mockResolvedValue({
+      id: 'v1',
+      stock: 10,
+      price: 20,
+    });
+    prisma.cart.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      id: 'c1',
+      items: [{ quantity: 1, productVariant: { price: 20 } }],
+    });
     prisma.cart.create.mockResolvedValue({ id: 'c1', userId: 'user-1' });
     prisma.cartItem.findFirst.mockResolvedValue(null);
 

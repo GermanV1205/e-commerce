@@ -18,5 +18,9 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Carga inicial de catálogo/admin: setState tras fetch en useEffect es el patrón del proyecto.
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

@@ -31,7 +31,10 @@ export class CreateProductVariantInputDto {
   sku: string;
 
   @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El precio debe ser un número válido' })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: 'El precio debe ser un número válido' },
+  )
   @Min(0, { message: 'El precio no puede ser negativo' })
   price: number;
 

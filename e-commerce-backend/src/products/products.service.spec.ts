@@ -20,7 +20,9 @@ describe('ProductsService', () => {
     slug: 'camiseta',
     description: 'Algodón',
     categoryId: '550e8400-e29b-41d4-a716-446655440000',
-    variants: [{ sku: 'CAM-S', size: 'S', color: 'Blanco', price: 10, stock: 3 }],
+    variants: [
+      { sku: 'CAM-S', size: 'S', color: 'Blanco', price: 10, stock: 3 },
+    ],
   };
 
   beforeEach(() => jest.clearAllMocks());
@@ -43,9 +45,9 @@ describe('ProductsService', () => {
   it('lanza 404 al actualizar un producto inexistente', async () => {
     prisma.product.findUnique.mockResolvedValue(null);
 
-    await expect(service.update('missing', { name: 'X' })).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(
+      service.update('missing', { name: 'X' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('elimina un producto existente', async () => {

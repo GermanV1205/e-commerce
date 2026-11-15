@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
@@ -55,7 +59,9 @@ export class AddressesService {
 
   async remove(userId: string, id: string) {
     await this.requireOwned(userId, id);
-    const used = await this.prisma.order.count({ where: { shippingAddressId: id } });
+    const used = await this.prisma.order.count({
+      where: { shippingAddressId: id },
+    });
     if (used > 0) {
       throw new ConflictException(
         'Esta dirección ya se usó en un pedido. No se puede borrar; puedes dejar de marcarla como predeterminada.',
@@ -65,7 +71,9 @@ export class AddressesService {
   }
 
   private async requireOwned(userId: string, id: string) {
-    const address = await this.prisma.address.findFirst({ where: { id, userId } });
+    const address = await this.prisma.address.findFirst({
+      where: { id, userId },
+    });
     if (!address) {
       throw new NotFoundException('La dirección no existe');
     }

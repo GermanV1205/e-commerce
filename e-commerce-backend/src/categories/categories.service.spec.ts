@@ -39,11 +39,15 @@ describe('CategoriesService', () => {
     prisma.category.findUnique.mockResolvedValue({ id: 'c1' });
     prisma.product.count.mockResolvedValue(2);
 
-    await expect(service.remove('c1')).rejects.toBeInstanceOf(ConflictException);
+    await expect(service.remove('c1')).rejects.toBeInstanceOf(
+      ConflictException,
+    );
   });
 
   it('404 si no existe', async () => {
     prisma.category.findUnique.mockResolvedValue(null);
-    await expect(service.findOne('x')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findOne('x')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });

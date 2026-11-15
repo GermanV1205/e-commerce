@@ -10,7 +10,9 @@ import helmet from 'helmet';
 async function bootstrap() {
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret || jwtSecret.length < 16) {
-    throw new Error('JWT_SECRET debe estar definido y tener al menos 16 caracteres');
+    throw new Error(
+      'JWT_SECRET debe estar definido y tener al menos 16 caracteres',
+    );
   }
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -62,4 +64,4 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap();
+void bootstrap();

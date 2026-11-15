@@ -53,9 +53,9 @@ describe('AuthService', () => {
   it('rechaza un login con credenciales inválidas', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
 
-    await expect(service.login('a@a.com', 'x', res as never)).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(
+      service.login('a@a.com', 'x', res as never),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
   it('emite cookies httpOnly cuando el login es válido', async () => {

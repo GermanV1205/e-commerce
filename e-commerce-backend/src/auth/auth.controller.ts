@@ -11,7 +11,12 @@ import {
   Res,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import type { Response } from 'express';
 
 import { AuthService } from './auth.service';
@@ -27,7 +32,10 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @ApiOperation({ summary: 'Registrar un nuevo cliente e iniciar sesión' })
-  @ApiResponse({ status: 201, description: 'Usuario registrado. Cookies httpOnly emitidas.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Usuario registrado. Cookies httpOnly emitidas.',
+  })
   @Post('register')
   async register(
     @Body() registerDto: RegisterDto,
@@ -36,7 +44,9 @@ export class AuthController {
     return this.authService.register(registerDto, res);
   }
 
-  @ApiOperation({ summary: 'Iniciar sesión. Emite access + refresh en cookies httpOnly' })
+  @ApiOperation({
+    summary: 'Iniciar sesión. Emite access + refresh en cookies httpOnly',
+  })
   @ApiResponse({ status: 200, description: 'Login exitoso.' })
   @ApiResponse({ status: 401, description: 'Credenciales inválidas.' })
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -49,7 +59,9 @@ export class AuthController {
     return this.authService.login(loginDto.email, loginDto.password, res);
   }
 
-  @ApiOperation({ summary: 'Rotar el refresh token y emitir un nuevo access token' })
+  @ApiOperation({
+    summary: 'Rotar el refresh token y emitir un nuevo access token',
+  })
   @HttpCode(HttpStatus.OK)
   @Post('refresh')
   async refresh(

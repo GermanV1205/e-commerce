@@ -1,5 +1,10 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -15,7 +20,10 @@ export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @ApiOperation({ summary: 'Generar radiografía del negocio (Dashboard)' })
-  @ApiResponse({ status: 200, description: 'Reporte generado con alertas de stock y métricas de órdenes.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Reporte generado con alertas de stock y métricas de órdenes.',
+  })
   @ApiResponse({ status: 403, description: 'Prohibido. Requiere rol ADMIN.' })
   @Roles(Role.ADMIN)
   @Get('dashboard')

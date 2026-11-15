@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api'; // Asegúrate de que este archivo exista
 import { apiErrorMessage, saveSession } from '../../services/auth';
-import { notifyCartUpdated } from '../../context/CartCountContext';
+import { notifyCartUpdated } from '../../context/cart-events';
 import { mergeGuestCart } from '../../services/guest-cart';
 
 export const LoginPage = () => {

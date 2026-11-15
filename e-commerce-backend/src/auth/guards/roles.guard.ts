@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from '../enums/role.enum';
 import { ROLES_KEY } from '../decorators/roles.decorator';
@@ -13,19 +18,21 @@ export class RolesGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    
+
     // Si la ruta no tiene el decorador @Roles, la dejamos pasar (ya la protege JwtAuthGuard)
     if (!requiredRoles) {
       return true;
     }
 
-    // 2. Obtenemos el usuario de la petición (inyectado previamente por JwtAuthGuard)
-    const { user } = context.switchToHttp().getRequest();
+    const request = context
+      .switchToHttp()
+      .getRequest<{ user?: { role?: Role } }>();
+    const user = request.user;
 
-    // 3. Verificamos si el rol del usuario está dentro de los permitidos
-    // IMPORTANTE: Asegúrate de que tu AuthModule esté guardando el 'role' dentro del payload del JWT.
-    if (!user || !user.role || !requiredRoles.includes(user.role)) {
-      throw new ForbiddenException('Acceso denegado: No tienes los permisos necesarios para realizar esta acción.');
+    if (!user?.role || !requiredRoles.includes(user.role)) {
+      throw new ForbiddenException(
+        'Acceso denegado: No tienes los permisos necesarios para realizar esta acción.',
+      );
     }
 
     return true;

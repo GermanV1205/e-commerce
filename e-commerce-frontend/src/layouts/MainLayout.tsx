@@ -1,5 +1,6 @@
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
-import { useCartCount, notifyCartUpdated } from '../context/CartCountContext';
+import { useCartCount } from '../context/CartCountContext';
+import { notifyCartUpdated } from '../context/cart-events';
 import { getUser, logoutRequest } from '../services/auth';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>

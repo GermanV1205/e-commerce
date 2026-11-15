@@ -59,7 +59,9 @@ export class CategoriesService {
 
   async remove(id: string) {
     await this.findOne(id);
-    const products = await this.prisma.product.count({ where: { categoryId: id } });
+    const products = await this.prisma.product.count({
+      where: { categoryId: id },
+    });
     if (products > 0) {
       throw new ConflictException(
         'No se puede eliminar: hay productos en esta categoría. Muévelos o elimínalos primero.',

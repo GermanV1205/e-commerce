@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { CreateProductVariantDto } from './dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -23,7 +27,9 @@ export class ProductVariantsService {
     });
 
     if (skuExists) {
-      throw new ConflictException(`El código SKU ${createProductVariantDto.sku} ya está registrado`);
+      throw new ConflictException(
+        `El código SKU ${createProductVariantDto.sku} ya está registrado`,
+      );
     }
 
     // 3. Registrar la variante en inventario
@@ -34,14 +40,14 @@ export class ProductVariantsService {
 
   async findAll() {
     return this.prisma.productVariant.findMany({
-      include: { product: true }
+      include: { product: true },
     });
   }
 
   async findOne(id: string) {
     const variant = await this.prisma.productVariant.findUnique({
       where: { id },
-      include: { product: true }
+      include: { product: true },
     });
 
     if (!variant) {
@@ -50,7 +56,7 @@ export class ProductVariantsService {
     return variant;
   }
 
-  update(id: string, updateProductVariantDto: UpdateProductVariantDto) {
+  update(id: string, _updateProductVariantDto: UpdateProductVariantDto) {
     return `This action updates a #${id} productVariant`;
   }
 

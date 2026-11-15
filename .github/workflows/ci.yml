@@ -33,9 +33,9 @@ jobs:
       JWT_SECRET: secreto-solo-para-la-pipeline-de-ci
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -88,9 +88,9 @@ jobs:
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:4173
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -134,9 +134,9 @@ jobs:
       VITE_API_URL: http://localhost:3000/api/v1
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -156,7 +156,7 @@ jobs:
     needs: [backend, frontend]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build imagen de la API
         run: docker build -t ecommerce-api ./e-commerce-backend

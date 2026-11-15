@@ -3,12 +3,7 @@ import { api } from '../services/api';
 import { getUser } from '../services/auth';
 import { guestCartAsCart } from '../services/guest-cart';
 import type { Cart } from '../types';
-
-const CART_UPDATED = 'cart-updated';
-
-export const notifyCartUpdated = () => {
-  window.dispatchEvent(new Event(CART_UPDATED));
-};
+import { CART_UPDATED_EVENT } from './cart-events';
 
 type CartCountValue = {
   totalItems: number;
@@ -41,13 +36,13 @@ export const CartCountProvider = ({ children }: { children: ReactNode }) => {
       void refreshCart();
     };
     void refreshCart();
-    window.addEventListener(CART_UPDATED, onCartUpdated);
+    window.addEventListener(CART_UPDATED_EVENT, onCartUpdated);
     const onStorage = (event: StorageEvent) => {
       if (event.key === 'user' || event.key === 'guest-cart') void refreshCart();
     };
     window.addEventListener('storage', onStorage);
     return () => {
-      window.removeEventListener(CART_UPDATED, onCartUpdated);
+      window.removeEventListener(CART_UPDATED_EVENT, onCartUpdated);
       window.removeEventListener('storage', onStorage);
     };
   }, [refreshCart]);
@@ -59,4 +54,6 @@ export const CartCountProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// El hook comparte archivo con el Provider (patrón habitual de React).
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCartCount = () => useContext(CartCountContext);

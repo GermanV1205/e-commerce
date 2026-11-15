@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { apiErrorMessage, getUser } from '../services/auth';
-import { notifyCartUpdated } from '../context/CartCountContext';
+import { notifyCartUpdated } from '../context/cart-events';
 import { addGuestItem } from '../services/guest-cart';
 import type { Product, ProductVariant } from '../types';
 import { variantPrice } from '../types';

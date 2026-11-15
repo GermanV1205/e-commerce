@@ -1,4 +1,12 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, ValidateIf } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  ValidateIf,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 const emptyToUndefined = ({ value }: { value: unknown }) =>

@@ -88,7 +88,9 @@ export class AuthService {
 
     if (!stored || stored.expiresAt < new Date()) {
       clearAuthCookies(res);
-      throw new UnauthorizedException('La sesión expiró. Inicia sesión de nuevo.');
+      throw new UnauthorizedException(
+        'La sesión expiró. Inicia sesión de nuevo.',
+      );
     }
 
     await this.prisma.refreshToken.delete({ where: { id: stored.id } });
@@ -109,7 +111,13 @@ export class AuthService {
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, role: true, firstName: true, lastName: true },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+      },
     });
     if (!user) {
       throw new UnauthorizedException('No hay sesión activa');
@@ -117,17 +125,35 @@ export class AuthService {
     return { user };
   }
 
-  async updateProfile(userId: string, data: { firstName: string; lastName: string }) {
+  async updateProfile(
+    userId: string,
+    data: { firstName: string; lastName: string },
+  ) {
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { firstName: data.firstName.trim(), lastName: data.lastName.trim() },
-      select: { id: true, email: true, role: true, firstName: true, lastName: true },
+      data: {
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+      },
     });
     return { user };
   }
 
   private async issueSession(
-    user: { id: string; email: string; role: string; firstName: string; lastName: string },
+    user: {
+      id: string;
+      email: string;
+      role: string;
+      firstName: string;
+      lastName: string;
+    },
     res: Response,
   ) {
     const payload = { sub: user.id, email: user.email, role: user.role };
@@ -144,7 +170,11 @@ export class AuthService {
       },
     });
 
-    res.cookie(ACCESS_COOKIE, accessToken, accessCookieOptions(this.accessTtlMs()));
+    res.cookie(
+      ACCESS_COOKIE,
+      accessToken,
+      accessCookieOptions(this.accessTtlMs()),
+    );
     res.cookie(REFRESH_COOKIE, refreshRaw, refreshCookieOptions(refreshTtlMs));
 
     const publicUser: PublicUser = {
@@ -167,7 +197,9 @@ export class AuthService {
   }
 
   private refreshTtlMs() {
-    const days = Number(this.configService.get('JWT_REFRESH_EXPIRES_DAYS') ?? 7);
+    const days = Number(
+      this.configService.get('JWT_REFRESH_EXPIRES_DAYS') ?? 7,
+    );
     return days * 24 * 60 * 60 * 1000;
   }
 }

@@ -12,7 +12,10 @@ describe('OrdersService', () => {
       providers: [
         OrdersService,
         { provide: PrismaService, useValue: {} },
-        { provide: ConfigService, useValue: { get: (_key: string, fallback?: string) => fallback } },
+        {
+          provide: ConfigService,
+          useValue: { get: (_key: string, fallback?: string) => fallback },
+        },
         { provide: MailService, useValue: { notifyOrderPaid: jest.fn() } },
       ],
     }).compile();

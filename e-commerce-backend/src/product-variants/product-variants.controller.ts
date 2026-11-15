@@ -1,5 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
 import { ProductVariantsService } from './product-variants.service';
 import { CreateProductVariantDto } from './dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
@@ -11,12 +26,22 @@ import { Role } from '../auth/enums/role.enum';
 @ApiTags('Variantes de Producto (Inventario)')
 @Controller('api/v1/product-variants')
 export class ProductVariantsController {
-  constructor(private readonly productVariantsService: ProductVariantsService) {}
+  constructor(
+    private readonly productVariantsService: ProductVariantsService,
+  ) {}
 
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Registrar una nueva variante (Talla, Color, Stock)' })
-  @ApiResponse({ status: 201, description: 'Variante creada en el inventario.' })
-  @ApiResponse({ status: 403, description: 'Prohibido. Requiere rol ADMIN o SELLER.' })
+  @ApiOperation({
+    summary: 'Registrar una nueva variante (Talla, Color, Stock)',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Variante creada en el inventario.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Prohibido. Requiere rol ADMIN o SELLER.',
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SELLER)
   @Post()
@@ -43,7 +68,10 @@ export class ProductVariantsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SELLER)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductVariantDto: UpdateProductVariantDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateProductVariantDto: UpdateProductVariantDto,
+  ) {
     return this.productVariantsService.update(id, updateProductVariantDto);
   }
 

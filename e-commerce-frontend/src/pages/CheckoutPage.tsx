@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { apiErrorMessage } from '../services/auth';
-import { notifyCartUpdated } from '../context/CartCountContext';
+import { notifyCartUpdated } from '../context/cart-events';
 import type { Cart, Order, SavedAddress, TransferInfo } from '../types';
 import { variantPrice } from '../types';
 
